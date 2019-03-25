@@ -1,3 +1,6 @@
+#!/usr/bin/env -S guile -s
+!#
+
 (define (sos-max-pair a b c)
  (cond ((smallest? a b c) (sos-pair b c))
        ((smallest? b a c) (sos-pair a c))
@@ -11,4 +14,6 @@
 
 (define (sqr x) (* x x))
 
-(sos-max-pair 2 1 3)
+(display (sos-max-pair 1 2 3)) (newline)
+(display (sos-max-pair 2 3 1)) (newline)
+(display (sos-max-pair 3 2 1)) (newline)
