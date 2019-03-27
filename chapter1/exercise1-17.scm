@@ -1,3 +1,6 @@
+#!/usr/bin/env -S guile -s
+!#
+
 (define (mul x y) 
   (cond ((= x 0) 0)
 	((= y 0) 0)	

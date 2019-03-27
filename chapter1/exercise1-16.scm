@@ -1,3 +1,6 @@
+#!/usr/bin/env -S guile -s
+!#
+
 ; iterative exponentiation in O(log n) time
 
 (define (exp-iter a b n)

@@ -1,3 +1,6 @@
+#!/usr/bin/env -S guile -s
+!#
+
 (define (mul-iter a x y) 
   (cond ((= y 0) a)
 	((even? y) (mul-iter a (double x) (halve y)))
