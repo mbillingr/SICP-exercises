@@ -1,8 +1,7 @@
 (define (mul-iter a x y) 
-	(cond ((= y 0) a)
-	      ((even? y) (mul-iter a (double x) (halve y)))
-		  (else (mul-iter (+ a x) x (- y 1)))))
-		  
+  (cond ((= y 0) a)
+	((even? y) (mul-iter a (double x) (halve y)))
+	(else (mul-iter (+ a x) x (- y 1)))))		  
 		  
 (define (double x) (+ x x))
 (define (halve x) (/ x 2))
