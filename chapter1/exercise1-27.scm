@@ -17,18 +17,8 @@
 
 (define (prime? n) (= n (smallest-divisor n)))
 
-(define (fast-prime? n times)
-    (cond ((= times 0) true)
-          ((fermat-test n) (fast-prime? n (- times 1)))
-          (else false)))
-
 (define true #t)
 (define false #f)
-
-(define (fermat-test n)
-    (define (try-it a)
-        (= (expmod a n n) a))
-    (try-it (+ 1 (random (- n 1)))))
 
 (define (expmod base exp m)
     (cond ((= exp 0) 1)
@@ -40,28 +30,6 @@
             (remainder 
                 (* base (expmod base (- exp 1) m)) 
                 m))))
-
-(define runtime get-internal-run-time)
-
-(define (timed-prime-test n)
-    (newline)
-    (display n)
-    (start-prime-test n (runtime)))
-
-(define (start-prime-test n start-time)
-    (if (fast-prime? n 100)
-        (report-prime (- (runtime) start-time))))
-
-(define (report-prime elapsed-time)
-    (display " *** ")
-    (display elapsed-time))
-    
-(define (search-for-primes start n)
-    (cond ((even? start) (search-for-primes (+ start 1) n))
-          ((= n 0) )
-          ((prime? start) (timed-prime-test start) 
-                          (search-for-primes (next start) (- n 1)))
-          (else (search-for-primes (next start) n))))
           
 (define (check-congruence n)
     (check-iter n 0))
