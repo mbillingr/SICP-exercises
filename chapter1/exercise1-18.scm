@@ -11,4 +11,5 @@
 		 
 (define (mul x y) (mul-iter 0 x y))
 		
-(mul 3 6)
+(display (mul 3 6))
+

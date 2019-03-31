@@ -15,4 +15,5 @@
 (define (exp base exponent) 
   (exp-iter 1 base exponent))
 		
-(exp 3 6)
+(display (exp 3 6))
+

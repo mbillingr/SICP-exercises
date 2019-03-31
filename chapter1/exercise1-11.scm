@@ -16,6 +16,6 @@
 
 (define (f n) (f-iterative 2 1 0 n))
 
-(display (f 30))
+(display (f 22))
 (newline)
-(display (f-recursive 30))
+(display (f-recursive 22))

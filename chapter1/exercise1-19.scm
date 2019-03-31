@@ -18,4 +18,5 @@
                         q
                         (- count 1)))))
 
-(fib 100)
+(display (fib 75))
+

@@ -10,4 +10,5 @@
 (define (double x) (+ x x))
 (define (halve x) (/ x 2))
 		
-(mul 3 6)
+(display (mul 3 6))
+
