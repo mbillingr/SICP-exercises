@@ -32,14 +32,12 @@
 
 (define (expmod base exp m)
     (cond ((= exp 0) 1)
-          ((even? exp) 
-            (remainder 
-                (square (expmod base (/ exp 2) m))
-                m))
-          (else 
-            (remainder 
-                (* base (expmod base (- exp 1) m)) 
-                m))))
+          ((even? exp) (remainder
+                         (square (expmod base (/ exp 2) m))
+                         m))
+          (else (remainder
+                  (* base (expmod base (- exp 1) m))
+                  m))))
 
 (define runtime get-internal-run-time)
 
@@ -55,11 +53,11 @@
 (define (report-prime elapsed-time)
     (display " *** ")
     (display elapsed-time))
-    
+
 (define (search-for-primes start n)
     (cond ((even? start) (search-for-primes (+ start 1) n))
-          ((= n 0) )
-          ((prime? start) (timed-prime-test start) 
+          ((= n 0))
+          ((prime? start) (timed-prime-test start)
                           (search-for-primes (next start) (- n 1)))
           (else (search-for-primes (next start) n))))
 

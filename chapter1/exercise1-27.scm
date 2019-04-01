@@ -22,15 +22,13 @@
 
 (define (expmod base exp m)
     (cond ((= exp 0) 1)
-          ((even? exp) 
-            (remainder 
-                (square (expmod base (/ exp 2) m))
-                m))
-          (else 
-            (remainder 
-                (* base (expmod base (- exp 1) m)) 
-                m))))
-          
+          ((even? exp) (remainder
+                           (square (expmod base (/ exp 2) m))
+                           m))
+          (else (remainder
+                    (* base (expmod base (- exp 1) m))
+                    m))))
+
 (define (check-congruence n)
     (check-iter n 0))
 
@@ -38,7 +36,7 @@
     (cond ((> a n) true)
           ((= (expmod a n n)
               (remainder a n))
-            (check-iter n (+ a 1)))
+           (check-iter n (+ a 1)))
           (else false)))
 
 (define (compare n)
