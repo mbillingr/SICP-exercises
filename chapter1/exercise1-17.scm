@@ -11,3 +11,4 @@
 (define (halve x) (/ x 2))
 
 (display (mul 3 6))
+(newline)

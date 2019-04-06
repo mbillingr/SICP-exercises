@@ -16,3 +16,4 @@
   (exp-iter 1 base exponent))
 
 (display (exp 3 6))
+(newline)

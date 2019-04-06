@@ -68,4 +68,4 @@
 (display "as an independent interval.\n")
 (display "However, they are not independent. Each interval should introduce ")
 (display "its uncertainty exactly once in the computation. This is the case ")
-(display "in par2, where every interval is used only once.")
+(display "in par2, where every interval is used only once.\n")

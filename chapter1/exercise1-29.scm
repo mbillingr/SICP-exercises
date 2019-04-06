@@ -20,6 +20,8 @@
          (sum term (next a) next b))))
 
 (display (integrate cube 0 1 100))
+(newline)
 
-;; causes stack overflow
-;(display (integrate cube 0 1 1000))
+;; may cause stack overflow
+(display (integrate cube 0 1 1000))
+(newline)

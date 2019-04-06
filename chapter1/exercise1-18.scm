@@ -12,3 +12,4 @@
 (define (mul x y) (mul-iter 0 x y))
 
 (display (mul 3 6))
+(newline)
