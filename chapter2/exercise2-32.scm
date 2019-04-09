@@ -9,12 +9,16 @@
 
 ; set of all subsets
 ;
-;  - the only subset of the empty set is the empty set
+; Assume we have a function that returns all subset of a given set.
+; We could use this function to return all subsets of our original 
+; set after removing one item.
+; From this result we can construct the subsets of the original set.
+; First, all subsets of the reduced set are subsets of the original set, too.
+; Adding the removed item to all of these subsets gives us the remaining subsets.
 ;
-;  1. remove item A from the set
-;  subsets of remaining set
-;  plus
-; TODO finish explanation :)
+; This gives us a recursive definition. Now we only need a termination condition,
+; which is easily defined as:
+;     The only subset of the empty set is the empty set.
 (define (subsets s)
   (if (null? s)
       (list nil)
