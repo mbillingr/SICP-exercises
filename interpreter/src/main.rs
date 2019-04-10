@@ -14,6 +14,7 @@ mod lexer;
 mod parser;
 mod symbol;
 
+use cpuprofiler::PROFILER;
 use crate::io::LineReader;
 use environment::{default_env, EnvRef};
 use error_chain::ChainedError;
@@ -65,6 +66,8 @@ fn run_file(input: &mut impl LineReader, env: EnvRef) -> Result<()> {
 fn main() {
     let global = default_env();
 
+    PROFILER.lock().unwrap().start("./my-prof.profile").expect("Couldn't start profiler");
+
     for arg in env::args().skip(1) {
         match arg {
             _ => {
@@ -76,6 +79,8 @@ fn main() {
             }
         }
     }
+
+    PROFILER.lock().unwrap().stop().expect("Couldn't stop profiler");
 
     let mut input = io::ReplInput::new(LINE_PROMPT);
     input.set_env(Rc::downgrade(&global));

@@ -4,7 +4,12 @@ version = "0.1.0"
 authors = ["Martin Billinger <flkazemakase@gmail.com>"]
 edition = "2018"
 
+[profile.release]
+debug = true
+
 [dependencies]
 error-chain = "0.12"
 rand = "0.6"
 rustyline = "3"
+
+cpuprofiler = "0.0.3"

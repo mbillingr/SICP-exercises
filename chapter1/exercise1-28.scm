@@ -67,3 +67,6 @@
 (display "even for those where the fermat test failed:\n")
 (compare 561)
 (compare 6601)
+
+(compare 1125899906842597)
+
