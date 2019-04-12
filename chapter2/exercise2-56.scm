@@ -37,8 +37,8 @@
 (define (make-sum a1 a2)
   (cond ((=number? a1 0) a2)
         ((=number? a2 0) a1)
-        ((and (number? a1) (number? a2) (+ a1 a2)))
-        (else (list '+ a1 a2'))))
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list '+ a1 a2))))
 
 (define (make-product m1 m2)
   (cond ((or (=number? m1 0) (=number? m2 0)) 0)
