@@ -49,6 +49,6 @@
 
 (define (make-power b e)
   (cond ((=number? b 1) 1)
-        ((=number? e 0) 0)
+        ((=number? e 0) 1)
         ((=number? e 1) b)
         (else (list '** b e))))
