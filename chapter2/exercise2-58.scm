@@ -19,21 +19,32 @@
                        (deriv (base exp) var)))
         (else error "unknown expression type -- DERIV" exp)))
 
+(define (copy-until item sequence)
+  (cond ((null? item) '())
+        ((= (car sequence) item) '())
+        (else (cons (car sequence) (copy-until item (cdr sequence))))))
+
+(define (contains? item sequence)
+  (cond ((null? sequence) #f)
+        ((= (car sequence) item) #t)
+        (else (contains? item (cdr sequence)))))
+
+(define (flatten-scalar sequence)
+  (cond ((not (pair? sequence)) sequence)
+        ((null? (cdr sequence)) (car sequence))
+        (else sequence)))
+
 (define (variable? x) (symbol? x))
 (define (same-variable? v1 v2)
   (and (variable? v1) (variable? v2) (eq? v1 v2)))
 
-(define (sum? x) (and (pair? x) (eq? (cadr x) '+)))
-(define (addend s) ()
-  (car s))
-(define (augend s)
-  (caddr s))
+(define (sum? x) (contains? '+ x))
+(define (addend s) (flatten-scalar (copy-until '+ s)))
+(define (augend s) (flatten-scalar (cdr (memq '+ s))))
 
-(define (product? x) (and (pair? x) (eq? (cadr x) '*)))
-(define (multiplier p)
-  (car p))
-(define (multiplicand p)
-  (caddr p))
+(define (product? x) (contains? '* x))
+(define (multiplier p) (flatten-scalar (copy-until '* p)))
+(define (multiplicand p) (flatten-scalar (cdr (memq '* p))))
 
 (define (power? x) (and (pair? x) (eq? (cadr x) '**)))
 (define (base e) (car e))
@@ -61,3 +72,7 @@
         ((=number? e 0) 1)
         ((=number? e 1) b)
         (else (list b '** e))))
+
+(display " d\n---- (x + 3 * (x + y + 2)) = ")
+(display (deriv '(x + 3 * (x + y + 2)) 'x))
+(display "\n dx\n")
