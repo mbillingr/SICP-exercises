@@ -78,19 +78,6 @@
 
 
 (define (successive-merge leaf-set)
-  ; 1. find two leaves with the lowest weights and merge
-  ;    them to produce a node that has these two nodes as
-  ;    its left and right branches.
-  ;    The weight of the new node is the sum of the two weights
-
-  ; 2. Remove the two leaves from the original set and
-  ;    replace them by this new node.
-
-  ; 3. Now continue this process. At each step, merge two
-  ;    nodes with the smallest weights, removing them from
-  ;    the set and replacing them with a node that has these
-  ;    two as its left and right branches.
-
   (if (null? (cdr leaf-set))
       (car leaf-set)
       (successive-merge
@@ -98,9 +85,30 @@
                                     (cadr leaf-set))
                     (cddr leaf-set)))))
 
+(define rock-song-alphabet (list (list 'a 2)
+                                 (list 'get 2)
+                                 (list 'sha 3)
+                                 (list 'wah 1)
+                                 (list 'boom 1)
+                                 (list 'job 2)
+                                 (list 'na 16)
+                                 (list 'yip 9)))
 
-(define sample-pairs (list (list 'A 4) (list 'B 2) (list 'C 1) (list 'D 1)))
+(define rock-song-tree (generate-huffman-tree rock-song-alphabet))
+(println rock-song-tree)
 
-(println sample-pairs)
-(println (make-leaf-set sample-pairs))
-(println (generate-huffman-tree sample-pairs))
+(define rock-song '(get a job
+                    sha na na na na na na na na
+                    get a job
+                    sha na na na na na na na na
+                    wah yip yip yip yip yip yip yip yip yip
+                    sha boom))
+(println rock-song)
+
+(define encoded (encode rock-song rock-song-tree))
+(println encoded)
+(println "Number of bits:" (length encoded))
+
+(let ((n-bits (/ (log (length rock-song-alphabet))
+                 (log 2))))
+  (println "Number of bits assuming a fixed-length code:" (* (length rock-song) n-bits)))
