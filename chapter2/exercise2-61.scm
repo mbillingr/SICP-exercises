@@ -1,7 +1,7 @@
 #!/usr/bin/env -S guile -s
 !#
 
-; Sets as unordered lists
+; Sets as ordered lists
 
 (define (element-of-set? x set)
   (cond ((null? set) #f)
