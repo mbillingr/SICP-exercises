@@ -4,6 +4,8 @@
 
 ;; prerequisites
 
+(define square sqr)
+
 (define (attach-tag type-tag contents) (cons type-tag contents))
 (define (type-tag datum)
   (if (pair? datum)
@@ -139,6 +141,10 @@
                        (- (angle z1) (angle z2))))
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'complex x))
+  (put 'real-part '(complex) real-part)
+  (put 'imag-part '(complex) imag-part)
+  (put 'magnitude '(complex) magnitude)
+  (put 'angle '(complex) angle)
   (put 'add '(complex complex) (lambda (x y) (tag (add-complex x y))))
   (put 'sub '(complex complex) (lambda (x y) (tag (sub-complex x y))))
   (put 'mul '(complex complex) (lambda (x y) (mul (add-complex x y))))
@@ -163,4 +169,17 @@
 
 (define z (make-complex-from-real-imag 3 4))
 
-(magnitude z)
+(trace (magnitude z))
+
+; What happens in detail:
+; - When we invoke (magnitude z) we do actually (apply-generic 'magnitude z))
+; - z has the type tag 'complex, so apply-generic goes looking for the
+;   'magnitude operation on the 'complex type, which is again the same
+;    (magnitude z) procedure.
+; - So (magnitude z) is invoked again but the 'complex type tag has been
+;   stripped from z. The remaining type tag is 'rectangular
+; - (apply-generic) now finds the magnitude function in the rectangular package
+;   which is invoked with the remaining pair of numbers.
+;
+; So in total apply-generic is called twice. First dispatching to magnitude
+; again, and then to rectangular.magnitude.
