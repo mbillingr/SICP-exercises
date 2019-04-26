@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (newtons-method g guess)
   (fixed-point (newton-transform g) guess))

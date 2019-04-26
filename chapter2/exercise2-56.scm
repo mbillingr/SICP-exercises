@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (deriv exp var)
   (cond ((number? exp) 0)
@@ -52,3 +52,7 @@
         ((=number? e 0) 1)
         ((=number? e 1) b)
         (else (list '** b e))))
+
+(define expr '(+ (* 2 x) (* (+ 1 x) x)))
+(println expr)
+(println (deriv expr 'x))

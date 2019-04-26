@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (fib n)
   (fib-iter 1 0 0 1 n))

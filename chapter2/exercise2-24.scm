@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define data (list 1 (list 2 (list 3 4))))
 

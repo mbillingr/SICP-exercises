@@ -1,12 +1,12 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (triangle row col)
     (cond ((= 0 col) 1)
           ((= row col) 1)
-          (else (+ (triangle (- row 1) 
+          (else (+ (triangle (- row 1)
                              (- col 1))
-                   (triangle (- row 1) 
+                   (triangle (- row 1)
                              col)))))
 
 (define (show-row row col)
@@ -21,5 +21,5 @@
     (if (= row 0)
         -1
         (show-triangle (- row 1))))
-        
+
 (show-triangle 4)

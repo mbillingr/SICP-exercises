@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (deriv exp var)
   (cond ((number? exp) 0)

@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (smallest-divisor n) (find-divisor n 2))
 
@@ -13,8 +13,6 @@
 (define (square x) (* x x))
 
 (define (prime? n) (= n (smallest-divisor n)))
-
-(define runtime get-internal-run-time)
 
 (define (timed-prime-test n)
     (newline)

@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (display "The golden ratio is defined as\n")
 (display "    φ = a / b = (a + b / b) with a > b > 0.\n")

@@ -1,6 +1,6 @@
-#!/usr/bin/env -S guile -s
-!#
-
+(import (builtin core)
+        (sicp utils))
+        
 (define (reverse lst)
   (define (iter in out)
     (if (null? in)

@@ -1,7 +1,7 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
-(define (cube-root x) 
+(define (cube-root x)
     (define (curt-iter guess)
         (define improved-guess (improve guess))
         (if (good-enough? guess improved-guess)
@@ -30,4 +30,3 @@
 (display (cube (cube-root 9e-9))) (newline)
 (display (cube (cube-root 9))) (newline)
 (display (cube (cube-root 9e9))) (newline)
-

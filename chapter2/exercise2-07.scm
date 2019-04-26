@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (add-interval x y)
   (make-interval (+ (lower-bound x) (lower-bound y))

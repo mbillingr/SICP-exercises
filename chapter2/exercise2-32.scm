@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (map proc items)
   (if (null? items)
@@ -10,7 +10,7 @@
 ; set of all subsets
 ;
 ; Assume we have a function that returns all subset of a given set.
-; We could use this function to return all subsets of our original 
+; We could use this function to return all subsets of our original
 ; set after removing one item.
 ; From this result we can construct the subsets of the original set.
 ; First, all subsets of the reduced set are subsets of the original set, too.

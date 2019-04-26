@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define us-coins (list 50 25 10 5 1))
 (define su-coins (list 1 5 10 25 50))

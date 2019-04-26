@@ -1,5 +1,4 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core))
 
 (define (sos-max-pair a b c)
  (cond ((smallest? a b c) (sos-pair b c))

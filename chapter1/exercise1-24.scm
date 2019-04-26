@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (smallest-divisor n) (find-divisor n 2))
 
@@ -38,8 +38,6 @@
           (else (remainder
                   (* base (expmod base (- exp 1) m))
                   m))))
-
-(define runtime get-internal-run-time)
 
 (define (timed-prime-test n)
     (newline)

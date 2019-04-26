@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 
 ; Q: changes that must be made to a system in order to add new types or new operations
@@ -47,4 +47,4 @@
 ;       often add ops -> data directed
 ;
 ;    The table-based data-directed approach is probably flexible enough to handle
-;    either situation, depending on how it is implemented. 
+;    either situation, depending on how it is implemented.

@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (entry tree) (car tree))
 (define (left-branch tree) (cadr tree))

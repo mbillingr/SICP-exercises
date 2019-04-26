@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (add-interval x y)
   (make-interval (+ (lower-bound x) (lower-bound y))
@@ -44,8 +44,8 @@
 (display (div-interval c a))
 (newline)
 
-(display (div-interval c d))
+(display (sub-interval a b))
 (newline)
 
-(display (sub-interval a b))
+(display (div-interval c d))
 (newline)

@@ -1,11 +1,11 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (sqrt x) (sqrt-iter 1.0 x))
 
 (define (sqrt-iter guess x)
     (define improved-guess (improve guess x))
-    (if (good-enough? guess improved-guess) 
+    (if (good-enough? guess improved-guess)
         improved-guess
         (sqrt-iter improved-guess x)))
 

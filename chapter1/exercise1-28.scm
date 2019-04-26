@@ -1,5 +1,5 @@
-#!/usr/bin/env -S guile -s
-!#
+(import (builtin core)
+        (sicp utils))
 
 (define (smallest-divisor n) (find-divisor n 2))
 
@@ -38,7 +38,7 @@
           ((even? exp) (remainder
                            (square (expmod base (/ exp 2) m))
                            m))
-          (else (remainder 
+          (else (remainder
                     (* base (expmod base (- exp 1) m))
                     m))))
 
