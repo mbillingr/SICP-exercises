@@ -1,0 +1,30 @@
+(import (builtin core)
+        (sicp utils))
+
+(define (count-pairs x)
+  (if (not (pair? x))
+      0
+      (+ (count-pairs (car x))
+         (count-pairs (cdr x))
+         1)))
+
+
+(define three '(1 2 3))
+(define four (begin (define a (cons 1 '()))
+                    (define b (cons 2 a))
+                    (define c (cons a b))
+                    c))
+(define seven (begin (define a (cons 1 '()))
+                     (define b (cons a a))
+                     (define c (cons b b))
+                     c))
+(define infinite (begin (define a (cons 1 '()))
+                        (define b (cons 2 a))
+                        (define c (cons 3 b))
+                        (set-cdr! a c)
+                        c))
+
+(println (count-pairs three) three)
+(println (count-pairs four) four)
+(println (count-pairs seven) seven)
+;(println (count-pairs infinite) infinite)
