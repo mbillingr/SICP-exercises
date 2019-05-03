@@ -1,0 +1,38 @@
+(import (builtin core)
+        (sicp utils))
+
+(define (cyclic-list? l)
+  (define (loop tortoise hare)
+    (cond ((null? hare) #f)
+          ((eq? tortoise hare) #t)
+          (else (if (null? (next hare))
+                    #f
+                    (loop (next tortoise)
+                          (next (next hare)))))))
+  (define (next x)
+    (if (pair? x)
+        (cdr x)
+        (error "not a proper list -- CYCLIC-LIST?" l)))
+  (if (null? l)
+      #f
+      (loop l (next l))))
+
+
+(define inf1 (begin (define a (cons 1 '()))
+                    (set-cdr! a a)
+                    a))
+(define inf2 (begin (define a (cons 1 '()))
+                    (define b (cons 2 a))
+                    (define c (cons 3 b))
+                    (set-cdr! a c)
+                    c))
+
+(println (cyclic-list? inf1))
+(println (cyclic-list? inf2))
+(println (cyclic-list? '(1 2 3 4 5)))
+(println (cyclic-list? '(1 2 3 4)))
+(println (cyclic-list? '(1 2 3)))
+(println (cyclic-list? '(1 2)))
+(println (cyclic-list? '(1)))
+(println (cyclic-list? '()))
+(println (cyclic-list? '(1 2 3 . 4)))
