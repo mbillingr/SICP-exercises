@@ -4,5 +4,5 @@ Whatever I may come up with while working through the book "Structure and Interp
 Currently this projects contains:
 - my solutions to most exercises in chapter 1 (34/46)
 - my solutions to most exercises in chapter 2 (79/97)
-- a few solutions to exercises in chapter 3
+- some solutions to exercises in chapter 3
 - a Scheme interpreter written in Rust that my solutions run on (it evolves with my progress in the book).
