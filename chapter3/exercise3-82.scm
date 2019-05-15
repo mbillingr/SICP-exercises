@@ -60,6 +60,8 @@
 
 (define (stream-cadr stream)
   (stream-car (stream-cdr stream)))
+(define (stream-cddr stream)
+  (stream-cdr (stream-cdr stream)))
 (define (stream-caddr stream)
   (stream-car (stream-cdr (stream-cdr stream))))
 (define (stream-cdddr stream)
@@ -127,6 +129,10 @@
     (cons-stream (car list)
                  (list->stream (cdr list)))))
 
+(define (step2 stream)
+  (cons-stream (stream-car stream)
+               (step2 (stream-cddr stream))))
+
 (define (monte-carlo experiment-stream passed failed)
   (define (next passed failed)
     (cons-stream
@@ -136,19 +142,21 @@
       (next (+ passed 1) failed)
       (next passed (+ failed 1))))
 
-(define c 11)
-(define m (power 2 48))
-(define (rand-update x)
-  (remainder (+ (* 6364136223846793005 x) c) m))
-
-(define random-numbers
-  (cons-stream (rand-update (runtime))
-               (stream-map rand-update random-numbers)))
+(define (rand-stream l h)
+  (cons-stream (+ l (random (- h l)))
+               (rand-stream l h)))
 
 (define (estimate-integral pred x1 x2 y1 y2)
-  (define x-rand (stream-map (lambda (r) (+ x1 (* r (- x2 x1))))
-                             (step random-numbers 2)))
-  (define y-rand (stream-map (lambda (r) (+ y1 (* r (- y2 y1))))
-                             (step random-numbers 2)))
-  (monte-carlo (stream-map pred x-rand y-rand)
-               0 0))
+  (scale-stream
+     (monte-carlo (stream-map pred (rand-stream x1 x2) (rand-stream y1 y2))
+                  0 0)
+     (* (- x2 x1) (- y2 y1))))
+
+(define pi-stream
+  (estimate-integral (lambda (x y) (<= (+ (sqr x) (sqr y)) 1))
+                     -1.0 1.0 -1.0 1.0))
+
+(println (stream-ref pi-stream 100))
+(println (stream-ref pi-stream 1000))
+(println (stream-ref pi-stream 10000))
+(println (stream-ref pi-stream 100000))
