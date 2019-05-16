@@ -8,4 +8,4 @@ Currently this projects contains:
 - starting work on chapter 4...
 - a Scheme interpreter written in Rust that my solutions run on (it evolves with my progress in the book).
   - with an integrated graphical debugger:
-   ![screenshot](https://raw.githubusercontent.com/mbillingr/SICP-exercises/gui2/resources/debugger.png)
+   ![screenshot](https://github.com/mbillingr/SICP-exercises/blob/master/resources/debugger.png)
