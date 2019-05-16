@@ -7,12 +7,8 @@
 (define first-operand car)
 (define rest-operands cdr)
 
-(define (evaluate exp env)
+(define (eval exp env)
   (println "Evaluating" exp "in" env))
-
-(define-syntax eval
-  (syntax-rules ()
-    ((_ . args) (evaluate . args))))
 
 (define (list-of-values exps env)
   (if (no-operands? exps)
