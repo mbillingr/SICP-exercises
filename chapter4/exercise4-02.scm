@@ -1,7 +1,7 @@
 (import (builtin core)
         (sicp utils))
 
-(include "../chapter4/chapter4-core.scm")
+(include "chapter4-core.scm")
 
 ; auxillary implementations
 
