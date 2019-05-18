@@ -1,0 +1,51 @@
+(import (builtin core)
+        (sicp utils))
+
+(include "chapter4-core.scm")
+
+(define (eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((lambda? exp)
+         (make-procedure (lambda-parameters exp)
+                         (lambda-body exp)
+                         env))
+        ((begin? exp) (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (eval (cond->if exp) env))
+        ((and? exp) (eval-and (and-expressions exp) env))
+        ((or? exp) (eval-or (or-expressions exp) env))
+        ((application? exp)
+         (apply (eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+(define (and? exp) (tagged-list? exp 'and))
+(define (eval-and exps env)
+  (define (iter exps result)
+    (if (null? exps)
+        result
+        (let ((value (eval (first-exp exps) env)))
+          (if (true? value)
+              (iter (rest-exps exps) value)
+              'false))))
+  (iter exps 'true))
+(define (and-expressions exp) (cdr exp))
+
+(define (or? exp) (tagged-list? exp 'or))
+(define (eval-or exps env)
+  (if (null? exps)
+      'false
+      (let ((value (eval (first-exp exps) env)))
+        (if (true? value)
+            value
+            (eval-or (rest-exps exps) env)))))
+(define (or-expressions exp) (cdr exp))
+
+(define (true? x) (not (eq? x 'false)))
+
+(println (eval '(if 'false (begin 2 3) (begin 4 5)) ""))
+(println (eval '(if 'true (begin 2 3) (begin 4 5)) ""))
