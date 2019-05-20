@@ -60,12 +60,17 @@
 (define (make-assignment var val)
   (list 'set! var val))
 
+(define (make-definition var val)
+  (list 'define var val))
+
+; the let binding introduces an extra frame.
+; to avoid that frame we replace it with defines.
 (define (scan-out-defines body)
   (define (initializations exprs)
     (cond ((null? exprs) '())
           ((definition? (car exprs))
-           (cons (list (definition-variable (car exprs))
-                       '*unassigned*)
+           (cons (make-definition (definition-variable (car exprs))
+                                  '*unassigned*)
                  (initializations (cdr exprs))))
           (else initializations (cdr exprs))))
   (define (transform body)
@@ -75,17 +80,7 @@
                                 (definition-value exp))
                exp))
          body))
-  (list (cons 'let (cons (initializations body) (transform body)))))
-
-; We can install scan-out-defines either in make-procedure or in procedure-body.
-; If we install it in procedure-body we would perform the transformation every
-; time the procedure is applied. This seems inefficient.
-; If we install it in make-procudere we perform the transformation only when
-; the procedure is created. This is more efficient if we assume that procedures
-; are usually called multiple times.
-; However, there is a drawback in transforming the procedure during creation:
-; we do not store the original representation of the procedure. This might make
-; debugging more complicated.
+  (append (initializations body) (transform body)))
 
 (define (contains-defines body)
   (cond ((null? body) false)
