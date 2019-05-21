@@ -1,0 +1,32 @@
+(import (builtin core)
+        (sicp utils))
+
+(include "chapter4-core.scm")
+
+(define (eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((unless? exp) (eval-if (unless->if exp) env))
+        ((lambda? exp)
+         (make-procedure (lambda-parameters exp)
+                         (lambda-body exp)
+                         env))
+        ((begin? exp) (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (eval (cond->if exp) env))
+        ((let? exp) (eval (let->combination exp) env))
+        ((application? exp)
+         (apply (eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+; unless as a special form
+
+(define (unless? exp) (tagged-list? exp 'unless))
+(define (unless->if exp)
+  (make-if (cadr exp)
+           (cadddr exp)
+           (caddr exp)))
