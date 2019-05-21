@@ -230,6 +230,7 @@
         (list '- -)
         (list '* *)
         (list '/ /)
+        (list 'error error)
         (list 'println println)))
 
 (define (primitive-procedure-names)
