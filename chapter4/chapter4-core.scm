@@ -229,7 +229,8 @@
         (list '+ +)
         (list '- -)
         (list '* *)
-        (list '/ /)))
+        (list '/ /)
+        (list 'println println)))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))

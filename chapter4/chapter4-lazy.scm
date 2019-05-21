@@ -49,6 +49,12 @@
         ((evaluated-thunk? obj) (thunk-value obj))
         (else obj)))
 
+; without memoization
+;(define (force-it obj))
+;  (if (thunk? obj)))
+;      (actual-value (thunk-exp obj) (thunk-env obj))))
+;      obj))
+
 (define (delay-it exp env)
   (list 'thunk exp env))
 (define (thunk? obj)
@@ -263,7 +269,8 @@
         (list '+ +)
         (list '- -)
         (list '* *)
-        (list '/ /)))
+        (list '/ /)
+        (list 'println println)))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
