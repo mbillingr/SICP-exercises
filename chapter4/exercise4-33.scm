@@ -16,6 +16,10 @@
 ;      don't use them in the evaluator. Instead, convert quoted lists to
 ;      something that is equivalent to (cons (cons ...)) without the need to
 ;      evaluate the compound cons.
+;   d) In exercise 4.34 I found a more elegant approach. Implement cons as a
+;      special form and car/cdr as primitives. Pairs don't need to be
+;      represented in the message passing form but can be tagged lists with two
+;      delayed elements.
 
 (define (text-of-quotation exp)
   (if (pair? (cadr exp))
