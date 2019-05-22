@@ -25,7 +25,9 @@
 (define (list->lazy-list list)
   (if (null? list)
       '()
-      (proc-cons (car list)
+      (proc-cons (if (pair? (car list))
+                     (list->lazy-list (car list))
+                     (car list))
                  (list->lazy-list (cdr list)))))
 
 (define (proc-cons a d)
