@@ -4,7 +4,7 @@
 (include "chapter4-amb.scm")
 
 (eval '(define (multiple-dwelling)
-         (let ((cooper (amb 1 2 3 4 5))  ; I have no idea why putting cooper before baker almost halves the runtime
+         (let ((cooper (amb 1 2 3 4 5))  ; I have no idea why putting cooper before baker almost halves the runtime - update: it's because cooper is at floor 2, so we find the result sooner...
                (baker (amb 1 2 3 4 5)))
            (require (not (= cooper 1)))
            (require (not (= baker 5)))
