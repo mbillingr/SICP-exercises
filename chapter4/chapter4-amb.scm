@@ -6,6 +6,13 @@
 (define (ambeval exp env succeed fail)
   ((analyze exp) env succeed fail))
 
+; simple interface to ambeval. intended to define procedures during exercises.
+(define (eval exp env)
+  (ambeval exp
+           env
+           (lambda (val success) val)
+           (lambda () 'undef)))
+
 (define (analyze exp)
   (cond ((self-evaluating? exp) (analyze-self-evaluating exp))
         ((quoted? exp) (analyze-quoted exp))

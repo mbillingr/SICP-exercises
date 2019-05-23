@@ -1,25 +1,33 @@
 (import (builtin core)
         (sicp utils))
 
-(define (require p)
-  (if (not p) (amb)))
+(include "chapter4-amb.scm")
 
-(define (an-integer-starting-from n)
-  (amb n (an-integer-starting-from (+ n 1))))
+(define prog
+  '(begin
+    (define (require p)
+      (if (not p) (amb)))
 
-; some alternative solutions:
+    (define (an-integer-starting-from n)
+      (amb n (an-integer-starting-from (+ n 1))))
 
-(define (an-integer-between lo hi)
-  (let ((n (an-integer-starting-from lo)))
-    (require (<= n hi))
-    n))
+    ; some alternative solutions:
 
-(define (an-integer-between lo hi)
-  (require (<= lo hi))
-  (amb lo (an-integer-between (+ lo 1) hi)))
+    (define (an-integer-between lo hi)
+      (let ((n (an-integer-starting-from lo)))
+        (require (<= n hi))
+        n))
 
-(define (an-integer-between lo hi)
-  (amb lo
-       (if (>= lo hi)
-           (amb)
-           (an-integer-between (+ lo 1) hi))))
+    (define (an-integer-between lo hi)
+      (require (<= lo hi))
+      (amb lo (an-integer-between (+ lo 1) hi)))
+
+    (define (an-integer-between lo hi)
+      (amb lo
+           (if (>= lo hi)
+               (amb)
+               (an-integer-between (+ lo 1) hi))))))
+
+(eval prog the-global-environment)
+
+(driver-loop)
