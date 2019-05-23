@@ -234,6 +234,8 @@
         (list '- -)
         (list '* *)
         (list '/ /)
+        (list 'quotient quotient)
+        (list 'remainder remainder)
         (list 'not not)
         (list 'list list)
         (list 'error error)

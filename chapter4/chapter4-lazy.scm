@@ -274,6 +274,8 @@
         (list '- -)
         (list '* *)
         (list '/ /)
+        (list 'quotient quotient)
+        (list 'remainder remainder)
         (list 'not not)
         (list 'error error)
         (list 'println println)))
