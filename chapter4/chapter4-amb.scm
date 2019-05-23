@@ -204,3 +204,30 @@
       (newline)
       (display ";;; There is no current problem")
       (driver-loop))))
+
+(define (all-solutions exp env)
+  (define n 0)
+  (ambeval exp
+           env
+           (lambda (val next-alternative)
+             (set! n (+ n 1))
+             (user-print val) (newline)
+             (next-alternative))
+           (lambda ()
+             (if (= n 1)
+                 (println "1 solution")
+                 (println n "solutions")))))
+
+(define (setup-environment)
+  (let ((initial-env
+          (extend-environment (primitive-procedure-names)
+                              (primitive-procedure-objects)
+                              the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+
+    (eval '(define (require p) (if (not p) (amb))) initial-env)
+
+    initial-env))
+
+(define the-global-environment (setup-environment))
