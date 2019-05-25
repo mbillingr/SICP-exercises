@@ -18,6 +18,7 @@
         ((quoted? exp) (analyze-quoted exp))
         ((variable? exp) (analyze-variable exp))
         ((assignment? exp) (analyze-assignment exp))
+        ((permanent-assignment? exp) (analyze-permanent-assignment exp))
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analyze-if exp))
         ((lambda? exp) (analyze-lambda exp))
@@ -32,6 +33,17 @@
 (define (amb? exp) (tagged-list? exp 'amb))
 (define (amb-choices exp) (cdr exp))
 (define (analyze-amb))
+
+(define (permanent-assignment? exp) (tagged-list? exp 'permanent-set!))
+(define (analyze-permanent-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)
+               (set-variable-value! var val env)
+               (succeed 'ok fail2))
+             fail))))
 
 (define (analyze-self-evaluating exp)
   (lambda (env succeed fail) (succeed exp fail)))
@@ -247,10 +259,7 @@
              (set! n (- n 1))
              (if (> n 0)
                  (next-alternative)))
-           (lambda ()
-             (if (= n 1)
-                 (println "1 solution")
-                 (println n "solutions")))))
+           (lambda () 'ok)))
 
 (define (setup-environment)
   (let ((initial-env
