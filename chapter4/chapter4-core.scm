@@ -240,10 +240,11 @@
         (list 'quotient quotient)
         (list 'remainder remainder)
         (list 'not not)
-        (list 'and (lambda (a b) (and a b)))      
+        (list 'and (lambda (a b) (and a b)))
         (list 'or (lambda (a b) (or a b)))
         (list 'xor xor)
         (list 'list list)
+        (list 'memq memq)
         (list 'error error)
         (list 'println println)))
 
