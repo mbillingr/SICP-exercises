@@ -216,6 +216,16 @@
     (define-variable! 'false false initial-env)
     initial-env))
 
+(define (prime? n)
+  (define (smallest-divisor n) (find-divisor n 2))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (next test-divisor)))))
+  (define (square x) (* x x))
+  (define (divides? a b) (= (remainder b a) 0))
+  (= n (smallest-divisor n)))
+
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
 (define (primitive-implementation proc) (cadr proc))
@@ -250,7 +260,11 @@
         (list 'list list)
         (list 'memq memq)
         (list 'error error)
-        (list 'println println)))
+        (list 'println println)
+        (list 'prime? prime?)))
+
+(define (next n)
+  (if (= n 2) 3 (+ n 2)))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
