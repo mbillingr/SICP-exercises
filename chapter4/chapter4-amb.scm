@@ -27,12 +27,33 @@
         ((let? exp) (analyze (let->combination exp)))
         ((amb? exp) (analyze-amb exp))
         ((ramb? exp) (analyze-ramb exp))
+        ((if-fail? exp) (analyze-if-fail exp))
         ((application? exp) (analyze-application exp))
         (else (error "Unknown expression type: ANALYZE" exp))))
 
 (define (amb? exp) (tagged-list? exp 'amb))
 (define (amb-choices exp) (cdr exp))
 (define (analyze-amb))
+
+(define (if-fail? exp) (tagged-list? exp 'if-fail))
+(define (if-fail-mainexpr exp) (cadr exp))
+(define (if-fail-alternative exp) (caddr exp))
+(define (analyze-if-fail exp)
+  (let ((mproc (analyze (if-fail-mainexpr exp)))
+        (fproc (analyze (if-fail-alternative exp))))
+    (lambda (env succeed fail)
+      (mproc env
+             (lambda (val fail2) (succeed val fail2))
+             (lambda ()
+               (fproc env
+                      (lambda (fval fail3) (succeed fval fail3))
+                      fail))))))
+      ;(mproc env))))
+             ;succeed))))
+             ;fail))))
+             ;(lambda (env succeed fail) (println "xxx")(succeed 5 fail))
+             ;(lambda () (println "fff") 'fff)))))
+               ;(fproc env succeed fail))))))
 
 (define (permanent-assignment? exp) (tagged-list? exp 'permanent-set!))
 (define (analyze-permanent-assignment exp)
