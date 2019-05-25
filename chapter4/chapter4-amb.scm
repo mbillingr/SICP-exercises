@@ -218,6 +218,19 @@
                  (println "1 solution")
                  (println n "solutions")))))
 
+(define (n-solutions n exp env)
+  (ambeval exp
+           env
+           (lambda (val next-alternative)
+             (user-print val) (newline)
+             (set! n (- n 1))
+             (if (> n 0)
+                 (next-alternative)))
+           (lambda ()
+             (if (= n 1)
+                 (println "1 solution")
+                 (println n "solutions")))))
+
 (define (setup-environment)
   (let ((initial-env
           (extend-environment (primitive-procedure-names)
