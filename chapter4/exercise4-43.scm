@@ -1,0 +1,76 @@
+(import (builtin core)
+        (sicp utils))
+
+(include "chapter4-amb.scm")
+
+(eval '(define (distinct? items)
+         (cond ((null? items) true)
+               ((null? (cdr items)) true)
+               ((member (car items) (cdr items)) false)
+               (else (distinct? (cdr items)))))
+      the-global-environment)
+
+(eval '(define (member item x)
+         (cond ((null? x) false)
+               ((equal? item (car x)) x)
+               (else (member item (cdr x)))))
+      the-global-environment)
+
+(eval '(define (map proc items)
+         (if (null? items)
+             '()
+             (cons (proc (car items))
+                   (map proc (cdr items)))))
+      the-global-environment)
+
+; I did not want to do any manual inference in this solution. Instead, my goal
+; was to put the requirements from the text directly in the program.
+; This lead to a solution that with two amb-lists per name: yachts and
+; daughters, and the requirement that a father's daughter and yacht cannot have
+; the same name. (The latter is not required for the unique solution, but for
+; the second part of the question where Mary Ann's name is not given)
+(eval '(define (yachts part-b)
+        (define (names) (amb 'mary-ann 'gabrielle 'lorna 'rosalind 'melissa))
+        (define (father daughter-name candidates)
+          (cond ((null? candidates) (error "not found" daughter-name))
+                ((eq? (daughter (car candidates))
+                      daughter-name)
+                 (car candidates))
+                (else (father daughter-name (cdr candidates)))))
+        (define daughter car)
+        (define yacht cdr)
+        (let ((moore (cons (names) (names))))
+          (if (not part-b)
+              (require (eq? (daughter moore) 'mary-ann)))
+          (require (eq? (yacht moore) 'lorna))
+          (require (not (eq? (daughter moore) (yacht moore))))
+          (let ((hood (cons (names) (names))))
+            (require (eq? (yacht hood) 'gabrielle))
+            (require (not (eq? (daughter hood) (yacht hood))))
+            (let ((hall (cons (names) (names))))
+              (require (eq? (yacht hall) 'rosalind))
+              (require (not (eq? (daughter hall) (yacht hall))))
+              (let ((downing (cons (names) (names))))
+                (require (eq? (yacht downing) 'melissa))
+                (require (eq? (daughter hood) 'melissa))
+                (require (not (eq? (daughter downing) (yacht downing))))
+                (let ((parker (cons (names) (names))))
+                  (require (not (eq? (daughter parker) (yacht parker))))
+                  (require (distinct? (map daughter (list moore hood hall downing parker))))
+                  (require (eq? (yacht (father 'gabrielle
+                                               (list moore hood hall downing parker)))
+                                (daughter parker)))
+                  (require (distinct? (map yacht (list moore hood hall downing parker))))
+                  (list (list 'moore (daughter moore))
+                        (list 'hood (daughter hood))
+                        (list 'hall (daughter hall))
+                        (list 'downing (daughter downing))
+                        (list 'parker (daughter parker)))))))))
+      the-global-environment)
+
+(all-solutions '(yachts false) the-global-environment)
+(timeit (lambda () (eval '(yachts false) the-global-environment)))
+
+(all-solutions '(yachts true) the-global-environment)
+
+(driver-loop)
