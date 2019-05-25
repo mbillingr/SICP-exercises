@@ -25,6 +25,7 @@
         ((cond? exp) (analyze (cond->if exp)))
         ((let? exp) (analyze (let->combination exp)))
         ((amb? exp) (analyze-amb exp))
+        ((ramb? exp) (analyze-ramb exp))
         ((application? exp) (analyze-application exp))
         (else (error "Unknown expression type: ANALYZE" exp))))
 
@@ -173,6 +174,26 @@
             ((car choices) env
                            succeed
                            (lambda () (try-next (cdr choices))))))
+      (try-next cprocs))))
+
+(define (ramb? exp) (tagged-list? exp 'ramb))
+(define (analyze-ramb exp)
+  (let ((cprocs (map analyze (amb-choices exp))))
+    (lambda (env succeed fail)
+      (define (try-next choices)
+        (cond ((null? choices) (fail))
+              ((null? (cdr choices))
+               ((car choices) env succeed (lambda () (try-next '()))))
+              (else
+                (let ((next 'undef) (rest 'undef))
+                  (cond ((= 0 (random 2))
+                         (set! next (car choices))
+                         (set! rest (cdr choices)))
+                        (else
+                         (set! next (cadr choices))
+                         (set! rest (cons (car choices)
+                                          (cddr choices)))))
+                  (next env succeed (lambda () (try-next rest)))))))
       (try-next cprocs))))
 
 (define input-prompt ";;; Amp-Eval input:")
