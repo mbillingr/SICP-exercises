@@ -82,7 +82,7 @@
          (pattern-match (cdr pat)
                         (cdr dat)
                         (pattern-match (car pat)
-                                       (cdr dat)
+                                       (car dat)
                                        frame)))
         (else 'failed)))
 
@@ -172,7 +172,7 @@
 (define (get-all-assertions) THE-ASSERTIONS)
 
 (define (get-indexed-assertions pattern)
-  (get-stream (index-key-of-pattern) 'assertion-stream))
+  (get-stream (index-key-of pattern) 'assertion-stream))
 
 (define (get-stream key1 key2)
   (let ((s (get key1 key2)))
@@ -223,8 +223,8 @@
   (let ((pattern (conclusion rule)))
     (if (indexable? pattern)
         (let ((key (index-key-of pattern)))
-          (let ((current-rule-stream)
-                (get-stream key 'rule-stream))
+          (let ((current-rule-stream
+                  (get-stream key 'rule-stream)))
             (put key
                  'rule-stream
                  (cons-stream rule current-rule-stream)))))))
@@ -254,14 +254,14 @@
 
 (define (query-driver-loop)
   (prompt-for-input input-prompt)
-  (let ((q query-syntax-process (read)))
+  (let ((q (query-syntax-process (read))))
     (cond ((assertion-to-be-added? q)
            (add-rule-or-assertion! (add-assertion-body q))
            (display "Assertion added to data base.")
            (newline)
            (query-driver-loop))
           (else
-           (display-output-prompt)
+           (display output-prompt)
            (newline)
            (display-stream
              (stream-map
@@ -281,6 +281,18 @@
 
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
+
+; -------- Utility Procedures -------
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
+
+(define (assoc key records)
+  (cond ((null? records) false)
+        ((equal? key (caar records)) (car records))
+        (else (assoc key (cdr records)))))
 
 ; -------- Query Syntax Procedures -------
 
@@ -344,7 +356,7 @@
 
 (define (constant-symbol? exp) (symbol? exp))
 
-(define rule-conter 0)
+(define rule-counter 0)
 
 (define (new-rule-application-id)
   (set! rule-counter (+ 1 rule-counter))
@@ -406,5 +418,34 @@
         (stream-car stream)
         (delay (flatten-stream (stream-cdr stream))))))
 
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+(define (stream-map proc s)
+  (if (stream-null? s)
+      the-empty-stream
+      (cons-stream (proc (stream-car s))
+                   (stream-map proc (stream-cdr s)))))
+
+(define (stream-for-each proc s)
+  (if (stream-null? s)
+      'done
+      (begin (proc (stream-car s))
+             (stream-for-each proc (stream-cdr s)))))
+
+(define (stream-append s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (stream-append (stream-cdr s1) s2))))
+
 (define (singleton-stream x)
   (cons-stream x the-empty-stream))
+
+(define (display-stream s)
+  (stream-for-each display-line s))
+
+(define (display-line x)
+  (println x))
