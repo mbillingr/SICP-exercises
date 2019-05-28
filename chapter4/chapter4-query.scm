@@ -1,5 +1,3 @@
-(import (sicp utils))
-
 (define (qeval query frame-stream)
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
@@ -93,6 +91,7 @@
         (extend var dat frame))))
 
 (define (apply-rules pattern frame)
+  ;(println 'apply-rules pattern frame)
   (stream-flatmap (lambda (rule)
                     (apply-a-rule rule pattern frame))
                   (fetch-rules pattern frame)))
@@ -128,7 +127,7 @@
          (unify-match (cdr p1)
                       (cdr p2)
                       (unify-match (car p1)
-                                   (cdr p2)
+                                   (car p2)
                                    frame)))
         (else 'failed)))
 
@@ -147,7 +146,7 @@
            'failed)
           (else (extend var val frame)))))
 
-(define (depends-on?)
+(define (depends-on? exp var frame)
   (define (tree-walk e)
     (cond ((var? e)
            (if (equal? var e)
@@ -272,6 +271,29 @@
                                 (contract-question-mark v))))
                (qeval q (singleton-stream '()))))
            (query-driver-loop)))))
+
+(define (query q)
+  (qeval (query-syntax-process q)
+         (singleton-stream '())))
+
+(define (assert! a)
+  (add-rule-or-assertion! (query-syntax-process a)))
+
+(define (display-query query)
+  (println "===========================================================================")
+  (println "|" query)
+  (println "+--------------------------------------------------------------------------")
+  (let ((q (query-syntax-process query)))
+    (stream-for-each
+      (lambda (line) (println "|" line))
+      (stream-map
+        (lambda (frame)
+          (instantiate q
+                       frame
+                       (lambda (v f)
+                         (contract-question-mark v))))
+        (qeval q (singleton-stream '())))))
+  (println "==========================================================================="))
 
 (define (prompt-for-input string)
   (newline) (newline) (display string) (newline))
