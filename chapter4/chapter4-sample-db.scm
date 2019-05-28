@@ -53,4 +53,8 @@
                      (address ?person-2 (?town . ?rest-2))
                      (not (same ?person-1 ?person-2)))))
 
+(assert! '(rule (wheel ?person)
+                (and (supervisor ?middle-manager ?person)
+                     (supervisor ?x ?middle-manager))))
+
 (assert! '(rule (same ?x ?x)))
