@@ -269,12 +269,12 @@
                               frame
                               (lambda (v f)
                                 (contract-question-mark v))))
-               (qeval q (singleton-stream '()))))
+               (qeval q (singleton-stream (make-empty-frame)))))
            (query-driver-loop)))))
 
 (define (query q)
   (qeval (query-syntax-process q)
-         (singleton-stream '())))
+         (singleton-stream (make-empty-frame))))
 
 (define (assert! a)
   (add-rule-or-assertion! (query-syntax-process a)))
@@ -292,7 +292,7 @@
                        frame
                        (lambda (v f)
                          (contract-question-mark v))))
-        (qeval q (singleton-stream '())))))
+        (qeval q (singleton-stream (make-empty-frame))))))
   (println "==========================================================================="))
 
 (define (prompt-for-input string)
@@ -397,6 +397,8 @@
           (symbol->string (cadr variable))))))
 
 ; ------- Frames and Bindings --------------
+
+(define (make-empty-frame) '())
 
 (define (make-binding variable value)
   (cons variable value))
