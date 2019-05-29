@@ -261,16 +261,23 @@
 
 (define (all-solutions exp env)
   (define n 0)
+  (for-each-solution
+    (lambda (val)
+      (set! n (+ n 1))
+      (user-print val) (newline))
+    exp
+    env)
+  (if (= n 1)
+      (println "1 solution")
+      (println n "solutions")))
+
+(define (for-each-solution proc exp env)
   (ambeval exp
            env
            (lambda (val next-alternative)
-             (set! n (+ n 1))
-             (user-print val) (newline)
+             (proc val)
              (next-alternative))
-           (lambda ()
-             (if (= n 1)
-                 (println "1 solution")
-                 (println n "solutions")))))
+           (lambda () 'done)))
 
 (define (n-solutions n exp env)
   (ambeval exp
@@ -284,8 +291,8 @@
 
 (define (setup-environment)
   (let ((initial-env
-          (extend-environment (primitive-procedure-names)
-                              (primitive-procedure-objects)
+          (extend-environment (primitive-procedure-names primitive-procedures)
+                              (primitive-procedure-objects primitive-procedures)
                               the-empty-environment)))
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)

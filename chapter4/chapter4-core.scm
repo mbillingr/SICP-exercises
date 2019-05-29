@@ -209,8 +209,8 @@
 
 (define (setup-environment)
   (let ((initial-env
-          (extend-environment (primitive-procedure-names)
-                              (primitive-procedure-objects)
+          (extend-environment (primitive-procedure-names primitive-procedures)
+                              (primitive-procedure-objects primitive-procedures)
                               the-empty-environment)))
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
@@ -239,6 +239,9 @@
         (list 'cddr cddr)
         (list 'cons cons)
         (list 'null? null?)
+        (list 'pair? pair?)
+        (list 'put put)
+        (list 'get get)
         (list 'eq? eq?)
         (list 'equal? equal?)
         (list '= =)
@@ -260,16 +263,18 @@
         (list 'list list)
         (list 'memq memq)
         (list 'error error)
+        (list 'display display)
+        (list 'newline newline)
         (list 'println println)
         (list 'prime? prime?)))
 
 (define (next n)
   (if (= n 2) 3 (+ n 2)))
 
-(define (primitive-procedure-names)
+(define (primitive-procedure-names primitive-procedures)
   (map car primitive-procedures))
 
-(define (primitive-procedure-objects)
+(define (primitive-procedure-objects primitive-procedures)
   (map (lambda (proc) (list 'primitive (cadr proc)))
        primitive-procedures))
 
