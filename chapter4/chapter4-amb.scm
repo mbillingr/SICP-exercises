@@ -33,7 +33,6 @@
 
 (define (amb? exp) (tagged-list? exp 'amb))
 (define (amb-choices exp) (cdr exp))
-(define (analyze-amb))
 
 (define (if-fail? exp) (tagged-list? exp 'if-fail))
 (define (if-fail-mainexpr exp) (cadr exp))

@@ -4,6 +4,15 @@
 (include "chapter4-query.scm")
 (include "chapter4-amb.scm")
 
+; Implement the query evaluator as a program that runs in the amb evaluator
+; Simple queryies work. It is possible to assert facts and rules, which can be
+; queried correctly.
+; Compound queries do not work. While trying to implement conjoin the program
+; started to run in a stack overflow, which manifests by try-next in analyze-amb
+; being called reapeatedly with the same proceduces.
+; I have not found the problem. It might be a bug in this exercise's
+; implementation or a bug in the amb evaluator.
+
 (define query-primitives
   (list (list 'assertions (lambda () THE-ASSERTIONS))
         (list 'rules (lambda () THE-RULES))
@@ -64,9 +73,11 @@
           ;                answer))
 
     (define (find-assertions pattern answer)
-      (pattern-match pattern
-                     (fetch-assertions pattern answer)
-                     answer))
+      (let ((result
+              (pattern-match pattern
+                             (fetch-assertions pattern answer)
+                             answer)))
+        result))
 
     (define (pattern-match pat dat answer)
       (cond ((equal? pat dat) answer)
@@ -86,6 +97,7 @@
             (extend var dat frame))))
 
     (define (apply-rules pattern answer)
+      (println 'apply-rules)
       (let ((clean-rule (rename-variables-in (fetch-rules pattern answer))))
         (qeval (rule-body clean-rule)
                (unify-match pattern
@@ -164,10 +176,10 @@
 
 (include "chapter4-sample-db.scm")
 
-(all-solutions
-  '(pretty-qeval
-    '(job ?x ?y))
-  the-global-environment)
+;(all-solutions
+;  '(pretty-qeval
+;    '(job ?x ?y)
+;  the-global-environment)
 
 ;(assert! '(rule (big-shot ?person ?division)
 ;                (and (job ?person (?division . ?job))
@@ -179,6 +191,11 @@
 ;  '(pretty-qeval
 ;    '(big-shot ?who ?division)
 ;  the-global-environment)
+
+(all-solutions
+  '(pretty-qeval
+    '(job ?person (computer programmer)))
+  the-global-environment)
 
 (all-solutions
   '(pretty-qeval
