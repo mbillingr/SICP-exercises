@@ -18,6 +18,22 @@
 
 (define (get-global-environment) the-global-environment)
 
+(define (let? exp) (tagged-list? exp 'let))
+(define (let-spec exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+(define (let-vars spec)
+  (if (null? spec)
+      '()
+      (cons (caar spec) (let-vars (cdr spec)))))
+(define (let-values spec)
+  (if (null? spec)
+      '()
+      (cons (cadar spec) (let-values (cdr spec)))))
+(define (let->combination exp)
+  (cons (make-lambda (let-vars (let-spec exp))
+                     (let-body exp))
+        (let-values (let-spec exp))))
+
 (define eceval-operations
   (list (list 'adjoin-arg adjoin-arg)
         (list 'announce-output announce-output)
@@ -29,6 +45,8 @@
         (list 'begin? begin?)
         (list 'begin-actions begin-actions)
         (list 'compound-procedure? compound-procedure?)
+        (list 'cond? cond?)
+        (list 'cond->if cond->if)
         (list 'define-variable! define-variable!)
         (list 'definition? definition?)
         (list 'definition-value definition-value)
@@ -47,6 +65,8 @@
         (list 'lambda-parameters lambda-parameters)
         (list 'last-exp? last-exp?)
         (list 'last-operand? last-operand?)
+        (list 'let? let?)
+        (list 'let->combination let->combination)
         (list 'lookup-variable-value lookup-variable-value)
         (list 'make-procedure make-procedure)
         (list 'no-operands? no-operands?)
@@ -113,6 +133,10 @@
         (branch (label ev-lambda))
         (test (op begin?) (reg exp))
         (branch (label ev-begin))
+        (test (op cond?) (reg exp))
+        (branch (label ev-cond))
+        (test (op let?) (reg exp))
+        (branch (label ev-let))
         (test (op application?) (reg exp))
         (branch (label ev-application))
         (goto (label unknown-expression-type))
@@ -266,6 +290,13 @@
         (perform (op define-variable!) (reg unev) (reg val) (reg env))
         (assign val (const ok))
         (goto (reg continue))
+
+      ev-cond
+        (assign exp (op cond->if) (reg exp))
+        (goto (label eval-dispatch))
+      ev-let
+        (assign exp (op let->combination) (reg exp))
+        (goto (label eval-dispatch))
       ec-done)))
 
 (define the-global-environment (setup-environment))
