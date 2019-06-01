@@ -297,7 +297,7 @@
   (newline) (newline) (display string) (newline))
 
 (define (announce-output string)
-  (newline) (display string) (newline))
+  (display string) (newline))
 
 (define (user-print object)
   (if (compound-procedure? object)
