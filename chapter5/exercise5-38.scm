@@ -24,7 +24,7 @@
           (spread-arguments (cdr operand-list) (cdr target-registers))
           (make-instruction-sequence target-registers '() '()))))))
 
-(define (compile-primitive-op exp target linkage)
+(define (compile-binary-op exp target linkage)
   (end-with-linkage linkage
     (append-instruction-sequences
       (spread-arguments (operands exp) '(arg1 arg2))
@@ -34,12 +34,43 @@
                   (reg arg1)
                   (reg arg2)))))))
 
-(define (primitive-op? exp)
+; I found it more convenient not to use spread-arguments for the multi-argument
+; implementation. Instead, I keep applying tho op to an accumulator.
+(define (compile-primitive-op exp target linkage)
+  (let ((op (primitive-operator exp)))
+    (define (iter ops)
+      (if (null? (cdr ops))
+          (preserving '(arg1)
+            (compile (car ops) 'arg2 'next)
+            (make-instruction-sequence '(arg1 arg2) (list target)
+              `((assign ,target
+                        (op ,op)
+                        (reg arg1)
+                        (reg arg2)))))
+          (append-instruction-sequences
+            (preserving '(arg1)
+              (compile (car ops) 'arg2 'next)
+              (make-instruction-sequence '(arg1 arg2) '(arg1)
+                `((assign arg1
+                          (op ,op)
+                          (reg arg1)
+                          (reg arg2)))))
+            (iter (cdr ops)))))
+    (end-with-linkage linkage
+      (append-instruction-sequences
+        (compile (car (operands exp)) 'arg1 'next)
+        (iter (cdr (operands exp)))))))
+
+
+(define (binary-primitive-op? exp)
+  (cond ((not (pair? exp)) false)
+        ((eq? (car exp) '=) true)
+        (else false)))
+(define (n-ary-primitive-op? exp)
   (cond ((not (pair? exp)) false)
         ((eq? (car exp) '*) true)
         ((eq? (car exp) '+) true)
         ((eq? (car exp) '-) true)
-        ((eq? (car exp) '=) true)
         (else false)))
 (define (primitive-operator exp)
   (car exp))
@@ -55,7 +86,9 @@
          (compile-assignment exp target linkage))
         ((definition? exp)
          (compile-definition exp target linkage))
-        ((primitive-op? exp)
+        ((binary-primitive-op? exp)
+         (compile-binary-op exp target linkage))
+        ((n-ary-primitive-op? exp)
          (compile-primitive-op exp target linkage))
         ((if? exp)
          (compile-if exp target linkage))
