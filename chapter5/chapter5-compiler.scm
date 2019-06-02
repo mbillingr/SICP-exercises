@@ -50,9 +50,6 @@
 (define (compiled-procedure? proc)
   (tagged-list? proc 'compiled-procedure))
 
-(define (compiled-procedure-entry c-proc) (cadr c-proc))
-(define (compiled-procedure-env c-proc) (caddr c-proc))
-
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
          (make-instruction-sequence '(continue) '() '((goto (reg continue)))))
