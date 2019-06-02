@@ -1,0 +1,56 @@
+
+Version A of factorial recurses first and evaluates the multiplier later.
+Version B evaluates the multiplier first.
+
+From a high-level perspective there should be no difference in efficiency.
+
+                               A    |    B
+------------------------------------+-----------------------------------------
+(assign val                         |  (save env)
+        (op lookup-variable-value)  |
+        (const n)                   |
+        (reg env))                  |
+(assign argl (op list) (reg val))   |
+(save argl)                         |
+(assign proc                        |  (assign proc
+        (op lookup-variable-value)  |          (op lookup-variable-value)
+        (const factorial)           |          (const factorial-alt)
+        (reg env))                  |          (reg env))
+...                                 |  ...
+(restore argl)                      |  (assign argl (op list) (reg val))
+                                    |  (restore env)
+                                    |  (assign val
+                                    |          (op lookup-variable-value)
+                                    |          (const n)
+                                    |          (reg env))
+
+Both impementations perform the same number of operations.
+Version A needs to save argl before entering the recursion so that the value of n is not lost.
+Version B needs to save env before entering the recursion so that it can look up n later.
+
+Diff between the two versions:
+(differences in labels were ignored)
+
+diff ../chapter5/exercise5-33a.s ../chapter5/exercise5-33b.s
+
+35,38c35,38
+<   (assign val (op lookup-variable-value) (const n) (reg env))
+<   (assign argl (op list) (reg val))
+<   (save argl)
+<   (assign proc (op lookup-variable-value) (const factorial) (reg env))
+---
+>   (save env)
+>
+>
+>   (assign proc (op lookup-variable-value) (const factorial-alt) (reg env))
+
+64,67c64,67
+< after-call14
+<
+<
+<   (restore argl)
+---
+> after-call16
+>   (assign argl (op list) (reg val))
+>   (restore env)
+>   (assign val (op lookup-variable-value) (const n) (reg env))
