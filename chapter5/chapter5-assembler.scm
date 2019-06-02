@@ -199,3 +199,12 @@
     (if val
         (cadr val)
         (error "Unknown operation -- ASSEMBLE" symbol))))
+
+; ---------------------------------------------------------------------------
+(define (pretty-print-code code)
+  (for-each
+    (lambda (instruction)
+      (if (symbol? instruction)
+          (println instruction)
+          (println " " instruction)))
+    code))
