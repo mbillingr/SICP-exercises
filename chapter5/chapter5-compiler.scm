@@ -1,6 +1,4 @@
 
-(import (sicp utils))
-
 (include "../chapter4/chapter4-core.scm")
 
 (define (compile exp target linkage)
