@@ -44,9 +44,6 @@
     (string-append (symbol->string name)
                    (number->string (new-label-number)))))
 
-(define (make-compiled-procedure entry env)
-  (list 'compiled-procedure entry env))
-
 (define (compiled-procedure? proc)
   (tagged-list? proc 'compiled-procedure))
 

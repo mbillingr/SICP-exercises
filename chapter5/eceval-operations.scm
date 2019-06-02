@@ -26,8 +26,16 @@
 (define (compiled-procedure-entry c-proc) (cadr c-proc))
 (define (compiled-procedure-env c-proc) (caddr c-proc))
 
+(define (make-compiled-procedure entry env)
+  (list 'compiled-procedure entry env))
+
 (define eceval-operations
-  (list (list 'adjoin-arg adjoin-arg)
+  (list (list '+ +)
+        (list '- -)
+        (list '* *)
+        (list '/ /)
+        (list '= =)
+        (list 'adjoin-arg adjoin-arg)
         (list 'announce-output announce-output)
         (list 'application? application?)
         (list 'apply-primitive-procedure apply-primitive-procedure)
@@ -50,6 +58,7 @@
         (list 'definition-variable definition-variable)
         (list 'empty-arglist empty-arglist)
         (list 'extend-environment extend-environment)
+        (list 'false? false?)
         (list 'first-exp first-exp)
         (list 'first-operand first-operand)
         (list 'get-global-environment get-global-environment)
@@ -66,6 +75,7 @@
         (list 'let->combination let->combination)
         (list 'list list)
         (list 'lookup-variable-value lookup-variable-value)
+        (list 'make-compiled-procedure make-compiled-procedure)
         (list 'make-procedure make-procedure)
         (list 'no-operands? no-operands?)
         (list 'operands operands)
