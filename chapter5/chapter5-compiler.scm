@@ -1,4 +1,7 @@
 
+(import (sicp utils))
+
+(include "../chapter4/chapter4-core.scm")
 
 (define (compile exp target linkage)
   (cond ((self-evaluating? exp)
@@ -54,12 +57,11 @@
 
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
-         (make-instruction-sequence '(continue) '() '(goto (reg continue))))
+         (make-instruction-sequence '(continue) '() '((goto (reg continue)))))
         ((eq? linkage 'next)
          (empty-instruction-sequence))
         (else
           (make-instruction-sequence '() '()
-            ;(list (list 'goto (list 'label linkage)))
             `((goto (label ,linkage)))))))
 
 (define (end-with-linkage linkage instruction-sequence)
@@ -143,7 +145,7 @@
 (define (compile-lambda exp target linkage)
   (let ((proc-entry (make-label 'entry))
         (after-lambda (make-label 'after-lambda)))
-    (let ((lambda-linkage (if eq? linkage 'next) after-lambda linkage))
+    (let ((lambda-linkage (if (eq? linkage 'next) after-lambda linkage)))
       (append-instruction-sequences
         (tack-on-instruction-sequence
           (end-with-linkage lambda-linkage
@@ -160,7 +162,7 @@
     (append-instruction-sequences
       (make-instruction-sequence '(env proc argl) '(env)
         `(,proc-entry
-          (assign env (op compiled-procedure env) (reg proc))
+          (assign env (op compiled-procedure-env) (reg proc))
           (assign env
                   (op extend-environment)
                   (const ,formals)
@@ -211,7 +213,7 @@
   (let ((primitive-branch (make-label 'primitive-branch))
         (compiled-branch (make-label 'compiled-branch))
         (after-call (make-label 'after-call)))
-    (let ((compiled-linkage (if eq? linkage 'next) after-call linkage))
+    (let ((compiled-linkage (if (eq? linkage 'next) after-call linkage)))
       (append-instruction-sequences
         (make-instruction-sequence '(proc) '()
           `((test (op primitive-procedure?) (reg proc))
@@ -236,7 +238,7 @@
            `((assign continue (label ,linkage))
              (assign val (op compiled-procedure-entry) (reg proc))
              (goto (reg val)))))
-        ((and (not (eq?target 'val)) (not (eq? linkage 'return)))
+        ((and (not (eq? target 'val)) (not (eq? linkage 'return)))
          (let ((proc-return (make-label 'proc-return)))
            (make-instruction-sequence '(proc) all-regs
              `((assign continue (label ,proc-return))
@@ -251,3 +253,73 @@
              (goto (reg val)))))
         ((and (not (eq? target 'val)) (eq? linkage 'return))
          (error "return linkage, target not val -- COMPILE" target))))
+
+(define (registers-needed s)
+  (if (symbol? s) '() (car s)))
+(define (registers-modified s)
+  (if (symbol? s) '() (cadr s)))
+(define (statements s)
+  (if (symbol? s) (list s) (caddr s)))
+
+(define (needs-register? seq reg)
+  (memq reg (registers-needed seq)))
+(define (modifies-register? seq reg)
+  (memq reg (registers-modified seq)))
+
+(define (append-instruction-sequences . seqs)
+  (define (append-2-sequences seq1 seq2)
+    (make-instruction-sequence
+      (list-union (registers-needed seq1)
+                  (list-difference (registers-needed seq2)
+                                   (registers-modified seq1)))
+      (list-union (registers-modified seq1)
+                  (registers-modified seq2))
+      (append (statements seq1) (statements seq2))))
+  (define (append-seq-list seqs)
+    (if (null? seqs)
+        (empty-instruction-sequence)
+        (append-2-sequences (car seqs)
+                            (append-seq-list (cdr seqs)))))
+  (append-seq-list seqs))
+
+(define (list-union s1 s2)
+  (cond ((null? s1) s2)
+        ((memq (car s1) s2) (list-union (cdr s1) s2))
+        (else (cons (car s1) (list-union (cdr s1) s2)))))
+
+(define (list-difference s1 s2)
+  (cond ((null? s1) '())
+        ((memq (car s1) s2) (list-difference (cdr s1) s2))
+        (else (cons (car s1) (list-difference (cdr s1) s2)))))
+
+(define (preserving regs seq1 seq2)
+  (if (null? regs)
+      (append-instruction-sequences seq1 seq2)
+      (let ((first-reg (car regs)))
+        (if (and (needs-register? seq2 first-reg)
+                 (modifies-register? seq1 first-reg))
+            (preserving (cdr regs)
+              (make-instruction-sequence
+                (list-union (list first-reg)
+                            (registers-needed seq1))
+                (list-difference (registers-modified seq1)
+                                 (list first-reg))
+                (append `((save ,first-reg))
+                        (statements seq1)
+                        `((restore ,first-reg))))
+              seq2)
+            (preserving (cdr regs) seq1 seq2)))))
+
+(define (tack-on-instruction-sequence seq body-seq)
+  (make-instruction-sequence
+    (registers-needed seq)
+    (registers-modified seq)
+    (append (statements seq) (statements body-seq))))
+
+(define (parallel-instruction-sequences seq1 seq2)
+  (make-instruction-sequence
+    (list-union (registers-needed seq1)
+                (registers-needed seq2))
+    (list-union (registers-modified seq1)
+                (registers-modified seq2))
+    (append (statements seq1) (statements seq2))))
