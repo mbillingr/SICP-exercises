@@ -1,5 +1,5 @@
 
-(include "chapter5-compiler.scm"
+(include "chapter5-compiler2.scm"
          "chapter5-vm.scm"
          "chapter5-assembler.scm")
 
@@ -23,7 +23,7 @@
 
 (define (compile-and-go expression)
   (let ((instructions
-          (assemble (statements (compile expression 'val 'return))
+          (assemble (statements (compile expression 'val 'return '()))
                     eceval)))
     (set! the-global-environment (setup-environment))
     (set-register-contents! eceval 'val instructions)
