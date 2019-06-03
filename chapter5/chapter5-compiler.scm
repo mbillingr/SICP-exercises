@@ -82,7 +82,7 @@
 (define (compile-assignment exp target linkage)
   (let ((var (assignment-variable exp))
         (get-value-code
-          (compile (assignment-value exp) 'val 'next')))
+          (compile (assignment-value exp) 'val 'next)))
     (end-with-linkage linkage
       (preserving '(env)
         get-value-code
