@@ -38,10 +38,10 @@
         val)))
 
 (define (lexical-address-set! laddr new-val env)
-  (set-nth-var (displacement-number laddr)
-               (frame-values (nth-env (frame-number laddr)
-                                      env))
-               new-val))
+  (set-nth-var! (displacement-number laddr)
+                (frame-values (nth-env (frame-number laddr)
+                                       env))
+                new-val))
 
 (define (nth-env n env)
   (cond ((eq? env the-empty-environment)  ; TODO: compare against global enviroment instead?
@@ -58,7 +58,7 @@
 (define (set-nth-var! n vals new-value)
   (cond ((null? vals)
          (error "Lexical displacement out of range -- SET-NTH-VAR!" n))
-        ((= n 0) (set-car vals new-value))
+        ((= n 0) (set-car! vals new-value))
         (else (nth-var (- n 1) (cdr vals)))))
 
 (define eceval-operations
