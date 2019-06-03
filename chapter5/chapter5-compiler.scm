@@ -44,9 +44,6 @@
     (string-append (symbol->string name)
                    (number->string (new-label-number)))))
 
-(define (compiled-procedure? proc)
-  (tagged-list? proc 'compiled-procedure))
-
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
          (make-instruction-sequence '(continue) '() '((goto (reg continue)))))

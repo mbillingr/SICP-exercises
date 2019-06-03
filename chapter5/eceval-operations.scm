@@ -23,6 +23,8 @@
                      (let-body exp))
         (let-values (let-spec exp))))
 
+(define (compiled-procedure? proc)
+  (tagged-list? proc 'compiled-procedure))
 (define (compiled-procedure-entry c-proc) (cadr c-proc))
 (define (compiled-procedure-env c-proc) (caddr c-proc))
 
@@ -76,6 +78,7 @@
         (list 'assignment-variable assignment-variable)
         (list 'begin? begin?)
         (list 'begin-actions begin-actions)
+        (list 'compiled-procedure? compiled-procedure?)
         (list 'compound-procedure? compound-procedure?)
         (list 'car car)
         (list 'cdr cdr)
