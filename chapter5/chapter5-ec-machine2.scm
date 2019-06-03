@@ -1,8 +1,19 @@
 
 (include "chapter5-compiler.scm"
          "chapter5-vm.scm"
-         "chapter5-assembler.scm"
-         "eceval-operations.scm")
+         "chapter5-assembler.scm")
+
+(define (user-print object)
+  (cond ((compound-procedure? object)
+         (display (list 'compound-procedure
+                        (procedure-parameters object)
+                        (procedure-body object)
+                        '<procedure-env>)))
+        ((compiled-procedure? object)
+         (display '<compiled-procedure>))
+        (else (display object))))
+
+(include "eceval-operations.scm")
 
 ; The assembler needs the apply procedure.
 ; It would be cleaner to use libraries rather than include files to avoid such
@@ -19,21 +30,11 @@
     (set-register-contents! eceval 'flag true)
     (start eceval)))
 
-(define (user-print object)
-  (cond ((compound-procedure? object)
-         (display (list 'compound-procedure
-                        (procedure-parameters object)
-                        (procedure-body object)
-                        '<procedure-env>)))
-        ((compiled-procedure? object)
-         (display '<compiled-procedure>))
-        (else (display object))))
-
 (define eceval
   (make-machine
-    '(exp env val continue proc argl unev)
+    '(exp env val continue proc argl unev compapp)
     eceval-operations
-    '(
+    '(  (assign compapp (label compound-apply))
         (branch (label external-entry))  ; run compiled code if flag is set
       read-eval-print-loop
         (perform (op initialize-stack))
