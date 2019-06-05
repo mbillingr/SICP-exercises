@@ -1,9 +1,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define STACK_SIZE 1024     // I think this is a huge stack
 #define MEMORY_SIZE 65536
+#define INPUT_BUFFER_SIZE 4096
+#define TOKEN_BUFFER_SIZE 128
+#define SYMBOL_BUFFER_SIZE 40960
 
 void error(const char* msg) {
     fprintf(stderr, msg);
@@ -71,10 +75,28 @@ Object number(double value) {
 }
 
 Object symbol(const char* name) {
-    // todo: intern symbol
+    static char symbol_buffer[SYMBOL_BUFFER_SIZE];
+    static char* next_free_symbol = &symbol_buffer[0];
+
+    char* cursor = symbol_buffer;
+    while(cursor < next_free_symbol) {
+        if(strcmp(cursor, name) == 0) break;
+        do {
+            cursor++;
+        } while(*cursor != 0);
+    }
+
+    if(cursor == next_free_symbol) {
+        size_t n = strlen(name) + 1;
+        if(next_free_symbol + n >= symbol_buffer + SYMBOL_BUFFER_SIZE)
+            error("Symbol buffer overflow");
+        strcpy(next_free_symbol, name);
+        next_free_symbol += n;
+    }
+
     Object obj = {
         .tag = Symbol,
-        .symbol = name,
+        .symbol = cursor,
     };
     return obj;
 }
@@ -195,8 +217,36 @@ void* stack_pop_label(struct Stack* stack) {
     return obj.label;
 }
 
+static char input_buffer[INPUT_BUFFER_SIZE];
+static char current_token[TOKEN_BUFFER_SIZE];
+static char* input_cursor;
+
+const char* next_token() {
+    error("not implemented: next_token");
+}
+
+
+
+Object parse_list(char** input) {
+    error("not implemented: parse_list");
+}
+
+Object parse_token(char** input) {
+    error("not implemented: parse_token");
+}
+
+Object parse_expression(char* input) {
+    if(*input == '(') {
+        return parse_list(&input);
+    } else {
+        return parse_token(&input);
+    }
+}
+
 Object read() {
-    error("not implemented: read");
+    input_cursor = input_buffer;
+    fgets(input_buffer, INPUT_BUFFER_SIZE, stdin);
+    return parse_expression(input_buffer);
 }
 
 Object get_global_environment() {
