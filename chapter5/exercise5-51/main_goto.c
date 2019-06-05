@@ -116,20 +116,28 @@ Object cons(Object car, Object cdr) {
     return obj;
 }
 
-Object car(Object obj) {
+Object* car_ptr(Object obj) {
   if(obj.tag != Pair) {
     print_object(obj);
     error("-- not a pair");
   }
-  return *memory_car(obj.pair);
+  return memory_car(obj.pair);
+}
+
+Object* cdr_ptr(Object obj) {
+  if(obj.tag != Pair) {
+    print_object(obj);
+    error("-- not a pair");
+  }
+  return memory_cdr(obj.pair);
+}
+
+Object car(Object obj) {
+  return *car_ptr(obj);
 }
 
 Object cdr(Object obj) {
-  if(obj.tag != Pair) {
-    print_object(obj);
-    error("-- not a pair");
-  }
-  return *memory_cdr(obj.pair);
+  return *cdr_ptr(obj);
 }
 
 Object label(void* label) {
@@ -221,32 +229,88 @@ static char input_buffer[INPUT_BUFFER_SIZE];
 static char current_token[TOKEN_BUFFER_SIZE];
 static char* input_cursor;
 
-const char* next_token() {
-    error("not implemented: next_token");
+void skip_whitespace() {
+    while(*input_cursor == ' ' || *input_cursor == '\n') {
+        input_cursor++;
+    }
 }
 
+void next_token() {
+    char* token = current_token;
+    *(token++) = *input_cursor;
+    switch(*input_cursor) {
+        case 0: return;
+        case '(':
+        case ')':
+            input_cursor++;
+            *token = 0;
+            skip_whitespace();
+            return;
+    }
+    input_cursor++;
 
-
-Object parse_list(char** input) {
-    error("not implemented: parse_list");
+    while(*input_cursor != 0) {
+        switch(*input_cursor) {
+            case ' ':
+            case '(':
+            case ')':
+            case '\n':
+                *token = 0;
+                skip_whitespace();
+                return;
+        }
+        *(token++) = *(input_cursor++);
+    }
 }
 
-Object parse_token(char** input) {
-    error("not implemented: parse_token");
+Object parse_literal();
+Object parse_list();
+Object parse_expression();
+
+Object parse_list() {
+    Object list = nil();
+    Object* end = &list;
+        next_token();
+    while(*current_token != ')') {
+        *end = cons(parse_expression(), nil());
+        end = cdr_ptr(*end);
+    }
+    next_token();
+    return list;
 }
 
-Object parse_expression(char* input) {
-    if(*input == '(') {
-        return parse_list(&input);
+Object parse_literal() {
+    Object obj;
+    char *end;
+    double num = strtod(current_token, &end);
+
+    if(end == current_token) {
+        obj = symbol(current_token);
     } else {
-        return parse_token(&input);
+        obj = number(num);
+    }
+    next_token();
+    return obj;
+}
+
+Object parse_expression() {
+    if(*current_token == '(') {
+        return parse_list();
+    } else {
+        return parse_literal();
     }
 }
 
 Object read() {
     input_cursor = input_buffer;
     fgets(input_buffer, INPUT_BUFFER_SIZE, stdin);
-    return parse_expression(input_buffer);
+    skip_whitespace();
+    next_token();
+    Object expr = parse_expression();
+    printf("expr: ");
+    print_object(expr);
+    printf("\n");
+    return expr;
 }
 
 Object get_global_environment() {
