@@ -1,7 +1,9 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #define STACK_SIZE 1024     // I think this is a huge stack
+#define MEMORY_SIZE 65536
 
 void error(const char* msg) {
     fprintf(stderr, msg);
@@ -27,19 +29,30 @@ typedef struct Object {
     };
 } Object;
 
+void print_object(Object obj);
+void print_list(Object obj);
+
 // TODO: I guess list memory should be global (for simplicity)
 //       So stack memory could be global too?
 
-size_t memory_new_pair() {
-    error("not implemented: memory_new_pair");
+static Object list_memory[MEMORY_SIZE][2];
+static size_t free_ptr = 0;
+
+size_t memory_allocate_pair() {
+    if(free_ptr >= MEMORY_SIZE) error("out of memory");
+    return free_ptr++;
 }
 
-Object* memory_car() {
-    error("not implemented: memory_car");
+Object* memory_car(size_t idx) {
+    return &list_memory[idx][0];
 }
 
-Object* memory_cdr() {
-    error("not implemented: memory_cdr");
+Object* memory_cdr(size_t idx) {
+    return &list_memory[idx][1];
+}
+
+bool is_nil(Object obj) {
+  return obj.tag == Nil;
 }
 
 Object nil() {
@@ -66,8 +79,12 @@ Object symbol(const char* name) {
     return obj;
 }
 
+bool is_pair(Object obj) {
+  return obj.tag == Pair;
+}
+
 Object cons(Object car, Object cdr) {
-    size_t idx = memory_new_pair();
+    size_t idx = memory_allocate_pair();
     *memory_car(idx) = car;
     *memory_cdr(idx) = cdr;
     Object obj = {
@@ -75,6 +92,22 @@ Object cons(Object car, Object cdr) {
         .pair = idx,
     };
     return obj;
+}
+
+Object car(Object obj) {
+  if(obj.tag != Pair) {
+    print_object(obj);
+    error("-- not a pair");
+  }
+  return *memory_car(obj.pair);
+}
+
+Object cdr(Object obj) {
+  if(obj.tag != Pair) {
+    print_object(obj);
+    error("-- not a pair");
+  }
+  return *memory_cdr(obj.pair);
 }
 
 Object label(void* label) {
@@ -85,24 +118,40 @@ Object label(void* label) {
     return obj;
 }
 
-void print_object(Object* obj) {
-    switch(obj->tag) {
+void print_object(Object obj) {
+    switch(obj.tag) {
         case Nil: printf("'()"); break;
         case Number:
-            if((int)obj->number == obj->number)
-                printf("%d", (int)obj->number);
+            if((int)obj.number == obj.number)
+                printf("%d", (int)obj.number);
             else
-                printf("%f", obj->number);
+                printf("%f", obj.number);
             break;
-        case Symbol: printf(obj->symbol); break;
+        case Symbol: printf(obj.symbol); break;
         case Pair:
             printf("(");
-            printf(".");
+            print_list(obj);
             printf(")");
             break;
-        case Label: printf("<label %p>", obj->label); break;
+        case Label: printf("<label %p>", obj.label); break;
         default: printf("<unknown object>"); break;
     }
+}
+
+void print_list(Object obj) {
+  print_object(car(obj));
+  obj = cdr(obj);
+
+  while(is_pair(obj)) {
+    printf(" ");
+    print_object(car(obj));
+    obj = cdr(obj);
+  }
+
+  if(!is_nil(obj)) {
+    printf(" . ");
+    print_object(obj);
+  }
 }
 
 typedef struct Stack {
@@ -160,23 +209,33 @@ int main() {
     Stack stack = stack_new(STACK_SIZE);
 
     exp = nil();
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
     exp = symbol("abc");
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
     exp = number(123456);
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
     exp = label(&&repl);
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
     exp = cons(symbol("A"), number(1));
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
     exp = cons(symbol("A"), cons(number(2), cons(symbol("C"), nil())));
-    print_object(&exp);
+    print_object(exp);
     printf("\n");
+    exp = cons(symbol("A"), cons(nil(), cons(symbol("C"), number(2))));
+    print_object(exp);
+    printf("\n");
+    stack_push(&stack, number(1));
+    stack_push(&stack, number(2));
+    stack_push(&stack, cons(number(3), (number(4))));
+
+    print_object(stack_pop(&stack));
+    print_object(stack_pop(&stack));
+    print_object(stack_pop(&stack));
 
 repl:
     stack_initialize(&stack);
@@ -187,7 +246,7 @@ repl:
     goto eval_dispatch;
 print_result:
     printf(";;; C-Eval value:\n");
-    print_object(&val);
+    print_object(val);
     printf("\n");
     goto repl;
 unknown_expression_type:
@@ -198,7 +257,7 @@ unknown_procedure_type:
     val = symbol("unknown-procedure-type-error");
     goto signal_error;
 signal_error:
-    print_object(&val);
+    print_object(val);
     goto repl;
 eval_dispatch:
 
