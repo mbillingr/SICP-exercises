@@ -71,12 +71,20 @@ Object nil() {
     return obj;
 }
 
+bool is_number(Object obj) {
+    return obj.tag == Number;
+}
+
 Object number(double value) {
     Object obj = {
         .tag = Number,
         .number = value,
     };
     return obj;
+}
+
+bool is_symbol(Object obj) {
+    return obj.tag == Symbol;
 }
 
 Object symbol(const char* name) {
@@ -234,12 +242,18 @@ void stack_initialize(struct Stack* stack) {
 
 void stack_push(struct Stack* stack, Object obj) {
     if(stack->top >= stack->end) error("Stack overflow");
-    *stack->top++ = obj;
+    *(stack->top++) = obj;
 }
 
 Object stack_pop(struct Stack* stack) {
     if(stack->top <= stack->start) error("Stack underflow");
     return *--stack->top;
+}
+
+void stack_push_label(struct Stack* stack, void* label) {
+    if(stack->top >= stack->end) error("Stack overflow");
+    Object obj = { .tag = Label, .label = label };
+    *(stack->top++) = obj;
 }
 
 void* stack_pop_label(struct Stack* stack) {
@@ -338,11 +352,7 @@ Object read() {
     fgets(input_buffer, INPUT_BUFFER_SIZE, stdin);
     skip_whitespace();
     next_token();
-    Object expr = parse_expression();
-    printf("expr: ");
-    print_object(expr);
-    printf("\n");
-    return expr;
+    return parse_expression();
 }
 
 Object enclosing_environment(Object env) { return cdr(env); }
@@ -420,7 +430,6 @@ void define_number(const char* var, double val, Object env) {
 }
 
 Object setup_environment() {
-    printf("Initializing Environment...\n");
     Object initial_env = extend_environment(nil(), nil(), nil());
     return initial_env;
 }
@@ -432,10 +441,43 @@ Object get_global_environment() {
     return g_env;
 }
 
+static Object OK = NIL;
+static Object QUOTE = NIL;
+static Object SET_VAR = NIL;
+static Object DEFINE = NIL;
+
+void init_symbols() {
+    OK = symbol("ok");
+    QUOTE = symbol("quote");
+    SET_VAR = symbol("set!");
+    DEFINE = symbol("define");
+}
+
+bool is_tagged_list(Object exp, Object tag) {
+    return is_pair(exp) && is_eq(car(exp), tag);
+}
+
+bool is_self_evaluating(Object exp) {
+    return is_number(exp);
+}
+
+bool is_variable(Object exp) {
+    return is_symbol(exp);
+}
+
+bool is_quoted(Object exp) { return is_tagged_list(exp, QUOTE); }
+Object text_of_quotation(Object exp) { return car(cdr(exp)); }
+
+bool is_assignment(Object exp) { return is_tagged_list(exp, SET_VAR); }
+Object assignment_variable(Object exp) { return car(cdr(exp)); }
+Object assignment_value(Object exp) { return car(cdr(cdr(exp))); }
+
 int main() {
     void* cont;
     Object exp, env, val, proc, argl, unev;
     Stack stack = stack_new(STACK_SIZE);
+
+    init_symbols();
 
     /*get_global_environment();
     define_number("x", 42, get_global_environment());
@@ -492,6 +534,7 @@ print_result:
     print_object(val);
     printf("\n");
     goto repl;
+
 unknown_expression_type:
     val = symbol("unknown-expression-type-error");
     goto signal_error;
@@ -502,8 +545,44 @@ unknown_procedure_type:
 signal_error:
     print_object(val);
     goto repl;
-eval_dispatch:
 
+eval_dispatch:
+    if(is_self_evaluating(exp)) goto ev_self_eval;
+    if(is_variable(exp)) goto ev_variable;
+    if(is_quoted(exp)) goto ev_quoted;
+    if(is_assignment(exp)) goto ev_assignment;
+    goto unknown_expression_type;
+
+ev_self_eval:
+    val = exp;
+    goto *cont;
+
+ev_variable:
+    val = lookup_variable_value(exp, env);
+    goto *cont;
+
+ev_quoted:
+    val = text_of_quotation(exp);
+    goto *cont;
+
+ev_assignment:
+    unev = assignment_variable(exp);
+    stack_push(&stack, unev);
+    exp = assignment_value(exp);
+    stack_push(&stack, env);
+    stack_push_label(&stack, cont);
+    cont = &&ev_assignment_1;
+    goto eval_dispatch;
+ev_assignment_1:
+    cont = stack_pop_label(&stack);
+    env = stack_pop(&stack);
+    unev = stack_pop(&stack);
+    set_variable_value(unev, val, env);
+    val = OK;
+    goto *cont;
+
+
+done:
     stack_destroy(&stack);
     return 0;
 }
