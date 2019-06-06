@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STACK_SIZE 1024
 #define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
 #define INPUT_BUFFER_SIZE 4096
 #define TOKEN_BUFFER_SIZE 128
@@ -46,8 +45,16 @@ typedef Object (*PrimitivePtr)(Object args);
 void print_object(Object obj);
 void print_list(Object obj);
 
+static Object stack, exp, env, val, proc, argl, unev;
+
+static Object *fresh_memory;
 static Object *list_memory;
 static size_t free_ptr = 0;
+
+void collect_garbage() {
+    printf("Collecting garbage...\n");
+    error("garbage collection not implemented");
+}
 
 size_t memory_allocate_pair() {
     if(free_ptr >= MEMORY_SIZE) error("out of memory");
@@ -305,22 +312,19 @@ void print_list(Object obj) {
   }
 }
 
-static Object stack_memory[STACK_SIZE];
-static Object* stack_end = &stack_memory[STACK_SIZE];
-static Object* stack_top = &stack_memory[0];
-
 void stack_initialize() {
-    stack_top = stack_memory;
+    stack = nil();
 }
 
 void stack_push(Object obj) {
-    if(stack_top >= stack_end) error("Stack overflow");
-    *(stack_top++) = obj;
+    stack = cons(obj, stack);
 }
 
 Object stack_pop() {
-    if(stack_top <= stack_memory) error("Stack underflow");
-    return *(--stack_top);
+    if(is_nil(stack)) error("Stack underflow");
+    Object obj = car(stack);
+    stack = cdr(stack);
+    return obj;
 }
 
 void stack_push_label(void* label) {
@@ -852,12 +856,12 @@ void user_print(Object obj) {
 
 int main() {
     void* cont;
-    Object exp, env, val, proc, argl, unev;
 
     printf("Object size: %d Bytes\n", sizeof(Object));
-    printf("Reserving %d MB of list memory.\n",
+    printf("Reserving 2x %d MB of list memory.\n",
            (MEMORY_SIZE * 2 * sizeof(Object))/(1024*1024));
 
+    fresh_memory = malloc(MEMORY_SIZE * 2 * sizeof(Object));
     list_memory = malloc(MEMORY_SIZE * 2 * sizeof(Object));
     init_symbols();
 
@@ -1052,6 +1056,7 @@ compound_apply:
     goto ev_sequence;
 
 done:
+    free(fresh_memory);
     free(list_memory);
     return 0;
 }
