@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STACK_SIZE 1024     // I think this is a huge stack
-#define MEMORY_SIZE 65536
+#define STACK_SIZE 1024
+#define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
 #define INPUT_BUFFER_SIZE 4096
 #define TOKEN_BUFFER_SIZE 128
 #define SYMBOL_BUFFER_SIZE 40960
@@ -46,7 +46,7 @@ typedef Object (*PrimitivePtr)(Object args);
 void print_object(Object obj);
 void print_list(Object obj);
 
-static Object list_memory[MEMORY_SIZE][2];
+static Object *list_memory;
 static size_t free_ptr = 0;
 
 size_t memory_allocate_pair() {
@@ -55,11 +55,11 @@ size_t memory_allocate_pair() {
 }
 
 Object* memory_car(size_t idx) {
-    return &list_memory[idx][0];
+    return &list_memory[idx * 2];
 }
 
 Object* memory_cdr(size_t idx) {
-    return &list_memory[idx][1];
+    return &list_memory[idx * 2 + 1];
 }
 
 bool is_eq(Object a, Object b) {
@@ -210,6 +210,18 @@ Object append(Object seq1, Object seq2) {
     if(is_nil(seq1))
         return seq2;
     return cons(car(seq1), append(cdr(seq1), seq2));
+}
+
+bool is_equal(Object a, Object b) {
+    if(!is_pair(a) && !is_pair(b)) {
+        return is_eq(a, b);
+    }
+
+    if(is_pair(a) && is_pair(b)) {
+        return is_equal(car(a), car(b)) && is_equal(cdr(a), cdr(b));
+    }
+
+    return false;
 }
 
 bool is_primitive_procedure(Object obj) {
@@ -532,8 +544,78 @@ Object expect_one_arg(Object args) {
     return car(args);
 }
 
+Object expect_two_args(Object* a, Object* b, Object args) {
+    if(is_nil(args)) error("Too few arguments supplied");
+    *a = car(args);
+    args = cdr(args);
+    if(is_nil(args)) error("Too few arguments supplied");
+    *b = car(args);
+    if(!is_nil(cdr(args))) error("Too many arguments supplied");
+}
+
 Object p_is_null(Object args) {
     return boolean(is_nil(expect_one_arg(args)));
+}
+
+Object p_is_number(Object args) {
+    return boolean(is_number(expect_one_arg(args)));
+}
+
+Object p_is_symbol(Object args) {
+    return boolean(is_symbol(expect_one_arg(args)));
+}
+
+Object p_is_pair(Object args) {
+    return boolean(is_pair(expect_one_arg(args)));
+}
+
+Object p_is_eq(Object args) {
+    Object a, b;
+    expect_two_args(&a, &b, args);
+    return boolean(is_eq(a, b));
+}
+
+Object p_is_equal(Object args) {
+    Object a, b;
+    expect_two_args(&a, &b, args);
+    return boolean(is_equal(a, b));
+}
+
+Object p_cons(Object args) {
+    Object a, b;
+    expect_two_args(&a, &b, args);
+    return cons(a, b);
+}
+
+Object p_car(Object args) { return car(expect_one_arg(args)); }
+Object p_cdr(Object args) { return cdr(expect_one_arg(args)); }
+Object p_set_car(Object args) {
+    Object pair, val;
+    expect_two_args(&pair, &val, args);
+    car_set(pair, val);
+    return S_OK;
+}
+Object p_set_cdr(Object args) {
+    Object pair, val;
+    expect_two_args(&pair, &val, args);
+    cdr_set(pair, val);
+    return S_OK;
+}
+
+Object p_list(Object args) {
+    return args;
+}
+
+Object p_is_less(Object args) {
+    Object a, b;
+    expect_two_args(&a, &b, args);
+    return boolean(expect_number(a) < expect_number(b));
+}
+
+Object p_is_greater(Object args) {
+    Object a, b;
+    expect_two_args(&a, &b, args);
+    return boolean(expect_number(a) > expect_number(b));
 }
 
 Object p_add(Object args) {
@@ -577,6 +659,20 @@ Object p_div(Object args) {
 Object setup_environment() {
     Object initial_env = extend_environment(nil(), nil(), nil());
     define_primitive("null?", p_is_null, initial_env);
+    define_primitive("number?", p_is_number, initial_env);
+    define_primitive("symbol?", p_is_symbol, initial_env);
+    define_primitive("pair?", p_is_pair, initial_env);
+    define_primitive("eq?", p_is_eq, initial_env);
+    define_primitive("equal", p_is_equal, initial_env);
+    define_primitive("cons", p_cons, initial_env);
+    define_primitive("car", p_car, initial_env);
+    define_primitive("cdr", p_cdr, initial_env);
+    define_primitive("set-car!", p_set_car, initial_env);
+    define_primitive("set-cdr!", p_set_cdr, initial_env);
+    define_primitive("list", p_list, initial_env);
+    define_primitive("=", p_is_eq, initial_env);
+    define_primitive("<", p_is_less, initial_env);
+    define_primitive(">", p_is_greater, initial_env);
     define_primitive("+", p_add, initial_env);
     define_primitive("-", p_sub, initial_env);
     define_primitive("*", p_mul, initial_env);
@@ -758,50 +854,12 @@ int main() {
     void* cont;
     Object exp, env, val, proc, argl, unev;
 
+    printf("Object size: %d Bytes\n", sizeof(Object));
+    printf("Reserving %d MB of list memory.\n",
+           (MEMORY_SIZE * 2 * sizeof(Object))/(1024*1024));
+
+    list_memory = malloc(MEMORY_SIZE * 2 * sizeof(Object));
     init_symbols();
-
-    /*get_global_environment();
-    define_number("x", 42, get_global_environment());
-    print_object(get_global_environment());
-    get_global_environment();
-
-    env = nil();
-    env = extend_environment(nil(), nil(), env);
-    define_number("x", 0, env);
-    define_number("y", 123, env);
-    define_number("x", 42, env);
-    print_object(env);
-    print_object(lookup_variable_value(symbol("y"), env));
-    print_object(lookup_variable_value(symbol("x"), env));*/
-
-    /*exp = nil();
-    print_object(exp);
-    printf("\n");
-    exp = symbol("abc");
-    print_object(exp);
-    printf("\n");
-    exp = number(123456);
-    print_object(exp);
-    printf("\n");
-    exp = label(&&repl);
-    print_object(exp);
-    printf("\n");
-    exp = cons(symbol("A"), number(1));
-    print_object(exp);
-    printf("\n");
-    exp = cons(symbol("A"), cons(number(2), cons(symbol("C"), nil())));
-    print_object(exp);
-    printf("\n");
-    exp = cons(symbol("A"), cons(nil(), cons(symbol("C"), number(2))));
-    print_object(exp);
-    printf("\n");
-    stack_push(number(1));
-    stack_push(number(2));
-    stack_push(cons(number(3), (number(4))));
-
-    print_object(stack_pop());
-    print_object(stack_pop());
-    print_object(stack_pop());*/
 
 repl:
     stack_initialize();
@@ -994,5 +1052,6 @@ compound_apply:
     goto ev_sequence;
 
 done:
+    free(list_memory);
     return 0;
 }
