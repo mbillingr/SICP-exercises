@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
+//#define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
+#define MEMORY_SIZE 1000
+#define RESERVED_FOR_GC 10  // reserve a few storage slots for use in the GC
 #define INPUT_BUFFER_SIZE 4096
 #define TOKEN_BUFFER_SIZE 128
 #define SYMBOL_BUFFER_SIZE 40960
@@ -11,6 +13,7 @@
 #define NIL { .tag = Nil, .data = 0 }
 #define FALSE  { .tag = False, .data = 0 }
 #define TRUE  { .tag = True, .data = 0 }
+#define BROKEN_HEART  { .tag = BrokenHeart, .data = 0 }
 
 void error(const char* msg) {
     fprintf(stderr, msg);
@@ -23,10 +26,11 @@ enum TypeTag {
     True,
     Number,
     Symbol,
-    Pair,
+    Pointer,
     Primitive,
     // -- internal use --
     Label,
+    BrokenHeart,
 };
 
 typedef struct Object {
@@ -34,7 +38,7 @@ typedef struct Object {
     union {
         double number;
         const char* symbol;
-        size_t pair;
+        size_t ptr;
         void* label;
         void* data;
     };
@@ -46,20 +50,16 @@ void print_object(Object obj);
 void print_list(Object obj);
 
 static Object stack, exp, env, val, proc, argl, unev;
+static Object g_env = NIL;
 
 static Object *fresh_memory;
 static Object *list_memory;
-static size_t free_ptr = 0;
+static size_t free_ptr = RESERVED_FOR_GC;
+static size_t reserved_ptr = 0;
 
-void collect_garbage() {
-    printf("Collecting garbage...\n");
-    error("garbage collection not implemented");
-}
-
-size_t memory_allocate_pair() {
-    if(free_ptr >= MEMORY_SIZE) error("out of memory");
-    return free_ptr++;
-}
+void collect_garbage();
+void gc_save(Object obj);
+Object gc_restore();
 
 Object* memory_car(size_t idx) {
     return &list_memory[idx * 2];
@@ -67,6 +67,51 @@ Object* memory_car(size_t idx) {
 
 Object* memory_cdr(size_t idx) {
     return &list_memory[idx * 2 + 1];
+}
+
+Object* fresh_memory_car(size_t idx) {
+    return &fresh_memory[idx * 2];
+}
+
+Object* fresh_memory_cdr(size_t idx) {
+    return &fresh_memory[idx * 2 + 1];
+}
+
+size_t memory_new_pair(Object car, Object cdr) {
+    if(free_ptr >= MEMORY_SIZE) {
+        gc_save(car);
+        gc_save(cdr);
+        collect_garbage();
+        if(free_ptr >= MEMORY_SIZE * 0.9)
+            error("out of memory");
+        cdr = gc_restore();
+        car = gc_restore();
+    }
+    *memory_car(free_ptr) = car;
+    *memory_cdr(free_ptr) = cdr;
+    return free_ptr++;
+}
+
+size_t memory_reserved_pair(Object car, Object cdr) {
+    if(reserved_ptr >= RESERVED_FOR_GC) {
+        error("GC needs more reserved memory");
+    }
+    *memory_car(reserved_ptr) = car;
+    *memory_cdr(reserved_ptr) = cdr;
+    return reserved_ptr++;
+}
+
+Object broken_heart() {
+    Object obj = BROKEN_HEART;
+    return obj;
+}
+
+Object pointer(size_t idx) {
+    Object obj = {
+        .tag = Pointer,
+        .ptr= idx,
+    };
+    return obj;
 }
 
 bool is_eq(Object a, Object b) {
@@ -167,34 +212,28 @@ Object symbol(const char* name) {
 }
 
 bool is_pair(Object obj) {
-  return obj.tag == Pair;
+  return obj.tag == Pointer;
 }
 
 Object cons(Object car, Object cdr) {
-    size_t idx = memory_allocate_pair();
-    *memory_car(idx) = car;
-    *memory_cdr(idx) = cdr;
-    Object obj = {
-        .tag = Pair,
-        .pair = idx,
-    };
-    return obj;
+    size_t idx = memory_new_pair(car, cdr);
+    return pointer(idx);
 }
 
 Object* car_ptr(Object obj) {
-  if(obj.tag != Pair) {
+  if(obj.tag != Pointer) {
     print_object(obj);
     error("-- not a pair");
   }
-  return memory_car(obj.pair);
+  return memory_car(obj.ptr);
 }
 
 Object* cdr_ptr(Object obj) {
-  if(obj.tag != Pair) {
+  if(obj.tag != Pointer) {
     print_object(obj);
     error("-- not a pair");
   }
-  return memory_cdr(obj.pair);
+  return memory_cdr(obj.ptr);
 }
 
 Object car(Object obj) {
@@ -259,6 +298,163 @@ Object label(void* label) {
     return obj;
 }
 
+bool is_pointer(Object obj) {
+    return obj.tag == Pointer;
+}
+
+void print_memory(Object* mem, size_t n) {
+    for(int i=0; i<n; i++) {
+        printf("|%4d", i);
+    }
+    printf("\n");
+
+    for(int i=0; i<n; i++) {
+        Object o = mem[i*2];
+        switch(o.tag) {
+            case BrokenHeart:printf("|----"); break;
+            case Nil:printf("| () "); break;
+            case Number: printf("|%1.2f", o.number); break;
+            case Pointer: printf("|%4d", o.ptr); break;
+            default: printf("| ?? "); break;
+        }
+    }
+    printf("\n");
+
+    for(int i=0; i<n; i++) {
+        Object o = mem[i*2 + 1];
+        switch(o.tag) {
+            case BrokenHeart:printf("|----"); break;
+            case Nil:printf("| () "); break;
+            case Number: printf("|%1.2f", o.number); break;
+            case Pointer: printf("|%4d", o.ptr); break;
+            default: printf("| ?? "); break;
+        }
+    }
+    printf("\n");
+}
+
+void gc_save(Object obj) {
+    stack = pointer(memory_reserved_pair(obj, stack));
+}
+
+Object gc_restore() {
+    if(is_nil(stack)) error("Stack underflow");
+    Object obj = car(stack);
+    stack = cdr(stack);
+    return obj;
+}
+
+size_t gc_move(size_t from, size_t to) {
+    *fresh_memory_car(to) = *memory_car(from);
+    *fresh_memory_cdr(to) = *memory_cdr(from);
+    *memory_car(from) = broken_heart();
+    *memory_cdr(from) = pointer(to);
+    return to;
+}
+
+bool gc_was_moved(size_t addr) {
+    return memory_car(addr)->tag == BrokenHeart;
+}
+
+Object gc_relocated_object(size_t addr) {
+    if(!gc_was_moved(addr))
+        error("trying to get new address of unmoved object");
+    return *memory_cdr(addr);
+}
+
+size_t gc_relocate(Object* obj, size_t free) {
+    if(is_pointer(*obj)) {
+        if(gc_was_moved(obj->ptr)) {
+            obj->ptr = gc_relocated_object(obj->ptr).ptr;
+        } else {
+            obj->ptr = gc_move(obj->ptr, free++);
+        }
+    }
+    return free;
+}
+
+size_t gc_init() {
+    size_t root = 0;
+    size_t i = root;
+    *memory_car(i) = exp;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = g_env;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = env;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = proc;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = argl;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = unev;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = stack;
+    *memory_cdr(i) = pointer(i+1);
+    i++;
+    *memory_car(i) = val;
+    *memory_cdr(i) = nil();
+    if(i >= RESERVED_FOR_GC) error("Not enough pairs reserved for GC");
+    return root;
+}
+
+void gc_finish(size_t root, size_t free) {
+    Object* tmp = fresh_memory;
+    fresh_memory = list_memory;
+    list_memory = tmp;
+    free_ptr = free;
+
+    Object x = pointer(root);
+    exp = car(x);
+    x = cdr(x);
+    g_env = car(x);
+    x = cdr(x);
+    env = car(x);
+    x = cdr(x);
+    proc = car(x);
+    x = cdr(x);
+    argl = car(x);
+    x = cdr(x);
+    unev = car(x);
+    x = cdr(x);
+    stack = car(x);
+    x = cdr(x);
+    val = car(x);
+    if(!is_nil(cdr(x))) error("Register mismatch in GC");
+}
+
+void collect_garbage() {
+    //print_object(env);
+    printf("memory usage: %d\%\n", 100 * free_ptr / MEMORY_SIZE);
+    printf("Collecting garbage...\n");
+    size_t root = gc_init();
+    size_t free = RESERVED_FOR_GC;
+    size_t scan = free;
+    //print_memory(list_memory, 30);
+
+    root = gc_move(root, free++);
+
+    for(; scan < free; scan++) {
+        /*printf("old:\n");
+        print_memory(list_memory, 30);
+        printf("new:\n");
+        print_memory(fresh_memory, 30);*/
+        free = gc_relocate(fresh_memory_car(scan), free);
+        free = gc_relocate(fresh_memory_cdr(scan), free);
+    }
+
+    printf("memory usage: %d\%\n", 100 * free / MEMORY_SIZE);
+
+    gc_finish(root, free);
+    //print_object(env);
+    //print_memory(list_memory, 30);
+}
+
 #define caar(exp) car(car(exp))
 #define cadr(exp) car(cdr(exp))
 #define cdar(exp) cdr(car(exp))
@@ -285,7 +481,7 @@ void print_object(Object obj) {
                 printf("%f", obj.number);
             break;
         case Symbol: printf(obj.symbol); break;
-        case Pair:
+        case Pointer:
             printf("(");
             print_list(obj);
             printf(")");
@@ -687,7 +883,6 @@ Object setup_environment() {
 }
 
 Object get_global_environment() {
-    static Object g_env = NIL;
     if(is_nil(g_env))
         g_env = setup_environment();
     return g_env;
