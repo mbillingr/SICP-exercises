@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-//#define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
-#define MEMORY_SIZE 1000
+#define MEMORY_SIZE 33554432  // 1 GB, assuming an object size of 16 bytes
 #define RESERVED_FOR_GC 10  // reserve a few storage slots for use in the GC
 #define INPUT_BUFFER_SIZE 4096
 #define TOKEN_BUFFER_SIZE 128
@@ -58,8 +57,6 @@ static size_t free_ptr = RESERVED_FOR_GC;
 static size_t reserved_ptr = 0;
 
 void collect_garbage();
-void gc_save(Object obj);
-Object gc_restore();
 
 Object* memory_car(size_t idx) {
     return &list_memory[idx * 2];
@@ -77,28 +74,11 @@ Object* fresh_memory_cdr(size_t idx) {
     return &fresh_memory[idx * 2 + 1];
 }
 
-size_t memory_new_pair(Object car, Object cdr) {
+size_t memory_allocate_pair() {
     if(free_ptr >= MEMORY_SIZE) {
-        gc_save(car);
-        gc_save(cdr);
-        collect_garbage();
-        if(free_ptr >= MEMORY_SIZE * 0.9)
-            error("out of memory");
-        cdr = gc_restore();
-        car = gc_restore();
+        error("out of memory");
     }
-    *memory_car(free_ptr) = car;
-    *memory_cdr(free_ptr) = cdr;
     return free_ptr++;
-}
-
-size_t memory_reserved_pair(Object car, Object cdr) {
-    if(reserved_ptr >= RESERVED_FOR_GC) {
-        error("GC needs more reserved memory");
-    }
-    *memory_car(reserved_ptr) = car;
-    *memory_cdr(reserved_ptr) = cdr;
-    return reserved_ptr++;
 }
 
 Object broken_heart() {
@@ -179,7 +159,6 @@ Object symbol(const char* name) {
 
     char* cursor = symbol_buffer;
     while(cursor < next_free_symbol) {
-        //printf("comparing %s : %s\n", cursor, name);
         if(strcmp(cursor, name) == 0) break;
         while(*cursor != 0) {
             cursor++;
@@ -198,12 +177,6 @@ Object symbol(const char* name) {
         next_free_symbol += n;
     }
 
-    /*printf("%s -> ", name);
-    for(int i=0; i<15; i++) {
-        printf("%d ", symbol_buffer[i]);
-    }
-    printf("\n");*/
-
     Object obj = {
         .tag = Symbol,
         .symbol = cursor,
@@ -216,7 +189,9 @@ bool is_pair(Object obj) {
 }
 
 Object cons(Object car, Object cdr) {
-    size_t idx = memory_new_pair(car, cdr);
+    size_t idx = memory_allocate_pair(car, cdr);
+    *memory_car(idx) = car;
+    *memory_cdr(idx) = cdr;
     return pointer(idx);
 }
 
@@ -333,17 +308,6 @@ void print_memory(Object* mem, size_t n) {
     printf("\n");
 }
 
-void gc_save(Object obj) {
-    stack = pointer(memory_reserved_pair(obj, stack));
-}
-
-Object gc_restore() {
-    if(is_nil(stack)) error("Stack underflow");
-    Object obj = car(stack);
-    stack = cdr(stack);
-    return obj;
-}
-
 size_t gc_move(size_t from, size_t to) {
     *fresh_memory_car(to) = *memory_car(from);
     *fresh_memory_cdr(to) = *memory_cdr(from);
@@ -429,30 +393,19 @@ void gc_finish(size_t root, size_t free) {
 }
 
 void collect_garbage() {
-    //print_object(env);
-    printf("memory usage: %d\%\n", 100 * free_ptr / MEMORY_SIZE);
     printf("Collecting garbage...\n");
     size_t root = gc_init();
     size_t free = RESERVED_FOR_GC;
     size_t scan = free;
-    //print_memory(list_memory, 30);
 
     root = gc_move(root, free++);
 
     for(; scan < free; scan++) {
-        /*printf("old:\n");
-        print_memory(list_memory, 30);
-        printf("new:\n");
-        print_memory(fresh_memory, 30);*/
         free = gc_relocate(fresh_memory_car(scan), free);
         free = gc_relocate(fresh_memory_cdr(scan), free);
     }
 
-    printf("memory usage: %d\%\n", 100 * free / MEMORY_SIZE);
-
     gc_finish(root, free);
-    //print_object(env);
-    //print_memory(list_memory, 30);
 }
 
 #define caar(exp) car(car(exp))
@@ -1062,7 +1015,8 @@ int main() {
 
 repl:
     stack_initialize();
-    printf("\n;;; C-Eval input:\n");
+    printf("\nmemory usage: %d\%\n", 100 * free_ptr / MEMORY_SIZE);
+    printf(";;; C-Eval input:\n");
     exp = read();
     env = get_global_environment();
     cont = &&print_result;
@@ -1085,6 +1039,8 @@ signal_error:
     goto repl;
 
 eval_dispatch:
+    if(free_ptr >= MEMORY_SIZE * 0.9)
+        collect_garbage();
     if(is_self_evaluating(exp)) goto ev_self_eval;
     if(is_variable(exp)) goto ev_variable;
     if(is_quoted(exp)) goto ev_quoted;
