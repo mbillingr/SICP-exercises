@@ -322,6 +322,34 @@ void* stack_pop_label() {
     return obj.label;
 }
 
+static Object S_OK = NIL;
+static Object S_FALSE = NIL;
+static Object S_QUOTE = NIL;
+static Object S_SET_VAR = NIL;
+static Object S_DEFINE = NIL;
+static Object S_LAMBDA = NIL;
+static Object S_IF = NIL;
+static Object S_PROCEDURE = NIL;
+static Object S_BEGIN = NIL;
+static Object S_COND = NIL;
+static Object S_ELSE = NIL;
+static Object S_LET = NIL;
+
+void init_symbols() {
+    S_OK = symbol("ok");
+    S_FALSE = symbol("false");
+    S_QUOTE = symbol("quote");
+    S_SET_VAR = symbol("set!");
+    S_DEFINE = symbol("define");
+    S_LAMBDA = symbol("lambda");
+    S_IF = symbol("if");
+    S_PROCEDURE = symbol("procedure");
+    S_BEGIN = symbol("begin");
+    S_COND = symbol("cond");
+    S_ELSE = symbol("else");
+    S_LET = symbol("let");
+}
+
 static char input_buffer[INPUT_BUFFER_SIZE];
 static char current_token[TOKEN_BUFFER_SIZE];
 static char* input_cursor;
@@ -339,6 +367,7 @@ void next_token() {
         case 0: return;
         case '(':
         case ')':
+        case '\'':
             input_cursor++;
             *token = 0;
             skip_whitespace();
@@ -391,6 +420,10 @@ Object parse_literal() {
 }
 
 Object parse_expression() {
+    if(*current_token == '\'') {
+        next_token();
+        return cons(S_QUOTE, cons(parse_expression(), nil()));
+    }
     if(*current_token == '(') {
         return parse_list();
     } else {
@@ -558,34 +591,6 @@ Object get_global_environment() {
     if(is_nil(g_env))
         g_env = setup_environment();
     return g_env;
-}
-
-static Object S_OK = NIL;
-static Object S_FALSE = NIL;
-static Object S_QUOTE = NIL;
-static Object S_SET_VAR = NIL;
-static Object S_DEFINE = NIL;
-static Object S_LAMBDA = NIL;
-static Object S_IF = NIL;
-static Object S_PROCEDURE = NIL;
-static Object S_BEGIN = NIL;
-static Object S_COND = NIL;
-static Object S_ELSE = NIL;
-static Object S_LET = NIL;
-
-void init_symbols() {
-    S_OK = symbol("ok");
-    S_FALSE = symbol("false");
-    S_QUOTE = symbol("quote");
-    S_SET_VAR = symbol("set!");
-    S_DEFINE = symbol("define");
-    S_LAMBDA = symbol("lambda");
-    S_IF = symbol("if");
-    S_PROCEDURE = symbol("procedure");
-    S_BEGIN = symbol("begin");
-    S_COND = symbol("cond");
-    S_ELSE = symbol("else");
-    S_LET = symbol("let");
 }
 
 bool is_tagged_list(Object exp, Object tag) {
