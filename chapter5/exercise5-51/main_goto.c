@@ -9,6 +9,8 @@
 #define TOKEN_BUFFER_SIZE 128
 #define SYMBOL_BUFFER_SIZE 40960
 
+#define NIL { .tag = Nil, .data = 0 }
+
 void error(const char* msg) {
     fprintf(stderr, msg);
     exit(EXIT_FAILURE);
@@ -30,6 +32,7 @@ typedef struct Object {
         const char* symbol;
         size_t pair;
         void* label;
+        void* data;
     };
 } Object;
 
@@ -55,14 +58,16 @@ Object* memory_cdr(size_t idx) {
     return &list_memory[idx][1];
 }
 
+bool is_eq(Object a, Object b) {
+    return a.tag == b.tag && a.data == b.data;
+}
+
 bool is_nil(Object obj) {
   return obj.tag == Nil;
 }
 
 Object nil() {
-    Object obj = {
-        .tag = Nil,
-    };
+    Object obj = NIL;
     return obj;
 }
 
@@ -80,10 +85,15 @@ Object symbol(const char* name) {
 
     char* cursor = symbol_buffer;
     while(cursor < next_free_symbol) {
+        //printf("comparing %s : %s\n", cursor, name);
         if(strcmp(cursor, name) == 0) break;
-        do {
+        while(*cursor != 0) {
             cursor++;
-        } while(*cursor != 0);
+        };
+        while(*cursor == 0) {
+            if(cursor == next_free_symbol) break;
+            cursor++;
+        };
     }
 
     if(cursor == next_free_symbol) {
@@ -93,6 +103,12 @@ Object symbol(const char* name) {
         strcpy(next_free_symbol, name);
         next_free_symbol += n;
     }
+
+    /*printf("%s -> ", name);
+    for(int i=0; i<15; i++) {
+        printf("%d ", symbol_buffer[i]);
+    }
+    printf("\n");*/
 
     Object obj = {
         .tag = Symbol,
@@ -138,6 +154,14 @@ Object car(Object obj) {
 
 Object cdr(Object obj) {
   return *cdr_ptr(obj);
+}
+
+Object car_set(Object obj, Object val) {
+  *car_ptr(obj) = val;
+}
+
+Object cdr_set(Object obj, Object val) {
+  *cdr_ptr(obj) = val;
 }
 
 Object label(void* label) {
@@ -301,6 +325,14 @@ Object parse_expression() {
     }
 }
 
+size_t list_length(Object list) {
+    size_t count = 0;
+    for(Object x=list; !is_nil(x); x=cdr(x)) {
+        count += 1;
+    }
+    return count;
+}
+
 Object read() {
     input_cursor = input_buffer;
     fgets(input_buffer, INPUT_BUFFER_SIZE, stdin);
@@ -313,8 +345,91 @@ Object read() {
     return expr;
 }
 
+Object enclosing_environment(Object env) { return cdr(env); }
+Object first_frame(Object env) { return car(env); }
+Object make_frame(Object variables, Object values) {
+    return cons(variables, values);
+}
+Object frame_variables(Object frame) { return car(frame); }
+Object frame_values(Object frame) { return cdr(frame); }
+void add_binding_to_frame(Object var, Object val, Object frame) {
+    car_set(frame, cons(var, car(frame)));
+    cdr_set(frame, cons(val, cdr(frame)));
+}
+
+Object extend_environment(Object vars, Object vals, Object base_env) {
+    if(list_length(vars) == list_length(vals)) {
+        return cons (make_frame(vars, vals), base_env);
+    } else {
+        if(list_length(vars) < list_length(vals))
+            error("Too many arguments supplied");
+        else
+            error("Too few arguments supplied");
+    }
+}
+
+Object lookup_variable_value(Object var, Object env) {
+    while(!is_nil(env)) {
+        Object frame = first_frame(env);
+        Object vars = frame_variables(frame);
+        Object vals = frame_values(frame);
+        for(; !is_nil(vars); vars = cdr(vars), vals = cdr(vals)) {
+            if(is_eq(var, car(vars))) return car(vals);
+        }
+        env = enclosing_environment(env);
+    }
+    error("Unbound variable");
+}
+
+void set_variable_value(Object var, Object val, Object env) {
+    while(!is_nil(env)) {
+        Object frame = first_frame(env);
+        Object vars = frame_variables(frame);
+        Object vals = frame_values(frame);
+        for(; !is_nil(vars); vars = cdr(vars), vals = cdr(vals)) {
+            if(is_eq(var, car(vars))) {
+                car_set(vals, val);
+                return;
+            }
+        }
+        env = enclosing_environment(env);
+    }
+    error("Unbound variable");
+}
+
+void define_variable(Object var, Object val, Object env) {
+    Object frame = first_frame(env);
+    Object vars = frame_variables(frame);
+    Object vals = frame_values(frame);
+    for(;;) {
+        if(is_nil(vars)) {
+            add_binding_to_frame(var, val, frame);
+            break;
+        }
+        if(is_eq(var, car(vars))) {
+            car_set(vals, val);
+            break;
+        }
+        vars = cdr(vars);
+        vals = cdr(vals);
+    }
+}
+
+void define_number(const char* var, double val, Object env) {
+    define_variable(symbol(var), number(val), env);
+}
+
+Object setup_environment() {
+    printf("Initializing Environment...\n");
+    Object initial_env = extend_environment(nil(), nil(), nil());
+    return initial_env;
+}
+
 Object get_global_environment() {
-    error("not implemented: get_global_environment");
+    static Object g_env = NIL;
+    if(is_nil(g_env))
+        g_env = setup_environment();
+    return g_env;
 }
 
 int main() {
@@ -322,7 +437,21 @@ int main() {
     Object exp, env, val, proc, argl, unev;
     Stack stack = stack_new(STACK_SIZE);
 
-    exp = nil();
+    /*get_global_environment();
+    define_number("x", 42, get_global_environment());
+    print_object(get_global_environment());
+    get_global_environment();
+
+    env = nil();
+    env = extend_environment(nil(), nil(), env);
+    define_number("x", 0, env);
+    define_number("y", 123, env);
+    define_number("x", 42, env);
+    print_object(env);
+    print_object(lookup_variable_value(symbol("y"), env));
+    print_object(lookup_variable_value(symbol("x"), env));*/
+
+    /*exp = nil();
     print_object(exp);
     printf("\n");
     exp = symbol("abc");
@@ -349,7 +478,7 @@ int main() {
 
     print_object(stack_pop(&stack));
     print_object(stack_pop(&stack));
-    print_object(stack_pop(&stack));
+    print_object(stack_pop(&stack));*/
 
 repl:
     stack_initialize(&stack);
