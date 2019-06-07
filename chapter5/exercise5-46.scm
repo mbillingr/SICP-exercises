@@ -52,7 +52,8 @@
             (+ (fib (- n 1))
                (fib (- n 2)))))
       'val
-      'next)))
+      'next
+      '())))
 
 (compile-and-go
   '(define (fib n)
