@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 void error(const char* msg) {
     fprintf(stderr, msg);
@@ -24,6 +25,8 @@ extern Object S_OK, S_FALSE, S_QUOTE, S_SET_VAR, S_DEFINE, S_LAMBDA, S_IF,
 
 
 int main() {
+    double time;
+
     init_memory();
     init_symbols();
 
@@ -34,9 +37,11 @@ repl:
     exp = read();
     env = get_global_environment();
     cont = &&print_result;
+    time = clock();
     goto eval_dispatch;
 print_result:
-    printf(";;; C-Eval value:\n");
+    time = (clock() - time) / CLOCKS_PER_SEC;
+    printf(";;; C-Eval value:                   (elapsed: %f)\n", time);
     user_print(val);
     printf("\n");
     goto repl;
