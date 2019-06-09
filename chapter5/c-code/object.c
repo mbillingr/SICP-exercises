@@ -136,6 +136,18 @@ Object symbol(const char* name) {
     return obj;
 }
 
+bool is_string(Object obj){
+    return obj.tag == String;
+}
+
+Object string(const char* value) {
+    Object obj = {
+        .tag = String,
+        .str = value,
+    };
+    return obj;
+}
+
 bool is_pair(Object obj) {
   return obj.tag == Pointer;
 }
@@ -219,6 +231,7 @@ void print_object(Object obj) {
                 printf("%f", obj.number);
             break;
         case Symbol: printf(obj.symbol); break;
+        case String: printf(obj.str); break;
         case Pointer:
             printf("(");
             print_list(obj);
@@ -248,6 +261,10 @@ Object apply_primitive_procedure(Object proc, Object args) {
     }
     PrimitivePtr fptr = proc.label;
     return fptr(args);
+}
+
+bool is_label(Object obj) {
+    return obj.tag == Label;
 }
 
 Object label(void* label) {

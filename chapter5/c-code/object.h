@@ -13,6 +13,7 @@ enum TypeTag {
     True,
     Number,
     Symbol,
+    String,
     Pointer,
     Primitive,
     // -- internal use --
@@ -25,6 +26,7 @@ typedef struct Object {
     union {
         double number;
         const char* symbol;
+        const char* str;
         size_t ptr;
         void* label;
         void* data;
@@ -54,6 +56,9 @@ double expect_number(Object obj);
 bool is_symbol(Object obj);
 Object symbol(const char* name);
 
+bool is_string(Object obj);
+Object string(const char* value);
+
 bool is_pair(Object obj);
 Object cons(Object car, Object cdr);
 Object* car_ptr(Object obj);
@@ -65,6 +70,8 @@ Object cdr_set(Object obj, Object val);
 
 bool is_pointer(Object obj);
 Object pointer(size_t idx);
+
+bool is_label(Object obj);
 Object label(void* label);
 
 bool is_primitive_procedure(Object obj);

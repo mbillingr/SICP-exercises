@@ -1,11 +1,19 @@
 #include "scheme.h"
 
 #include "config.h"
+#include "parser.h"
 
 Object g_env = NIL;
 
 extern Object S_OK, S_FALSE, S_QUOTE, S_SET_VAR, S_DEFINE, S_LAMBDA, S_IF,
               S_PROCEDURE,S_BEGIN,S_COND,S_ELSE,S_LET;
+
+void error_obj(const char* msg, Object obj) {
+    printf(msg);
+    printf(" ");
+    user_print(obj);
+    error("");
+}
 
 Object append(Object seq1, Object seq2) {
     if(is_nil(seq1))
@@ -54,7 +62,7 @@ Object lookup_variable_value(Object var, Object env) {
         }
         env = enclosing_environment(env);
     }
-    error("Unbound variable");
+    error_obj("Unbound variable --", var);
 }
 
 void set_variable_value(Object var, Object val, Object env) {
@@ -70,7 +78,7 @@ void set_variable_value(Object var, Object val, Object env) {
         }
         env = enclosing_environment(env);
     }
-    error("Unbound variable");
+    error_obj("Unbound variable --", var);
 }
 
 void define_variable(Object var, Object val, Object env) {
@@ -127,6 +135,10 @@ Object p_is_symbol(Object args) {
     return boolean(is_symbol(expect_one_arg(args)));
 }
 
+Object p_is_string(Object args) {
+    return boolean(is_string(expect_one_arg(args)));
+}
+
 Object p_is_pair(Object args) {
     return boolean(is_pair(expect_one_arg(args)));
 }
@@ -143,6 +155,13 @@ Object p_is_equal(Object args) {
     return boolean(is_equal(a, b));
 }
 
+Object p_not(Object args) {
+    if(is_false(expect_one_arg(args)))
+        return make_true();
+    else
+        return make_false();
+}
+
 Object p_cons(Object args) {
     Object a, b;
     expect_two_args(&a, &b, args);
@@ -151,6 +170,20 @@ Object p_cons(Object args) {
 
 Object p_car(Object args) { return car(expect_one_arg(args)); }
 Object p_cdr(Object args) { return cdr(expect_one_arg(args)); }
+Object p_caar(Object args) { return car(car(expect_one_arg(args))); }
+Object p_cadr(Object args) { return car(cdr(expect_one_arg(args))); }
+Object p_cdar(Object args) { return cdr(car(expect_one_arg(args))); }
+Object p_cddr(Object args) { return cdr(cdr(expect_one_arg(args))); }
+Object p_caaar(Object args) { return car(caar(expect_one_arg(args))); }
+Object p_caadr(Object args) { return car(cadr(expect_one_arg(args))); }
+Object p_cadar(Object args) { return car(cdar(expect_one_arg(args))); }
+Object p_caddr(Object args) { return car(cddr(expect_one_arg(args))); }
+Object p_cdaar(Object args) { return cdr(caar(expect_one_arg(args))); }
+Object p_cdadr(Object args) { return cdr(cadr(expect_one_arg(args))); }
+Object p_cddar(Object args) { return cdr(cdar(expect_one_arg(args))); }
+Object p_cdddr(Object args) { return cdr(cddr(expect_one_arg(args))); }
+Object p_cadddr(Object args) { return cadr(cddr(expect_one_arg(args))); }
+
 Object p_set_car(Object args) {
     Object pair, val;
     expect_two_args(&pair, &val, args);
@@ -218,17 +251,52 @@ Object p_div(Object args) {
     return number(acc);
 }
 
+Object p_read(Object args) {
+    return read();
+}
+
+Object p_display(Object args) {
+    user_print(expect_one_arg(args));
+    return nil();
+}
+
+Object p_newline(Object args) {
+    printf("\n");
+    return nil();
+}
+
+Object p_apply(Object args) {
+    Object proc, pargs;
+    expect_two_args(&proc, &pargs, args);
+    return apply_primitive_procedure(proc, pargs);
+}
+
 Object setup_environment() {
     Object initial_env = extend_environment(nil(), nil(), nil());
     define_primitive("null?", p_is_null, initial_env);
     define_primitive("number?", p_is_number, initial_env);
     define_primitive("symbol?", p_is_symbol, initial_env);
+    define_primitive("string?", p_is_string, initial_env);
     define_primitive("pair?", p_is_pair, initial_env);
     define_primitive("eq?", p_is_eq, initial_env);
-    define_primitive("equal", p_is_equal, initial_env);
+    define_primitive("equal?", p_is_equal, initial_env);
+    define_primitive("not", p_not, initial_env);
     define_primitive("cons", p_cons, initial_env);
     define_primitive("car", p_car, initial_env);
     define_primitive("cdr", p_cdr, initial_env);
+    define_primitive("caar", p_caar, initial_env);
+    define_primitive("cadr", p_cadr, initial_env);
+    define_primitive("cdar", p_cdar, initial_env);
+    define_primitive("cddr", p_cddr, initial_env);
+    define_primitive("caaar", p_caaar, initial_env);
+    define_primitive("caadr", p_caadr, initial_env);
+    define_primitive("cadar", p_cadar, initial_env);
+    define_primitive("caddr", p_caddr, initial_env);
+    define_primitive("cdaar", p_cdaar, initial_env);
+    define_primitive("cdadr", p_cdadr, initial_env);
+    define_primitive("cddar", p_cddar, initial_env);
+    define_primitive("cdddr", p_cdddr, initial_env);
+    define_primitive("cadddr", p_cadddr, initial_env);
     define_primitive("set-car!", p_set_car, initial_env);
     define_primitive("set-cdr!", p_set_cdr, initial_env);
     define_primitive("list", p_list, initial_env);
@@ -239,6 +307,10 @@ Object setup_environment() {
     define_primitive("-", p_sub, initial_env);
     define_primitive("*", p_mul, initial_env);
     define_primitive("/", p_div, initial_env);
+    define_primitive("read", p_read, initial_env);
+    define_primitive("display", p_display, initial_env);
+    define_primitive("newline", p_newline, initial_env);
+    define_primitive("apply", p_apply, initial_env);
     define_variable(symbol("true"), make_true(), initial_env);
     define_variable(symbol("false"), make_false(), initial_env);
     return initial_env;
