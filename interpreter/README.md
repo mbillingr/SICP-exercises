@@ -1,12 +1,8 @@
 
 # A partial Scheme Interpreter
 
-I use it for studying SICP.
+Here used to live the Scheme interpreter that I wrote in order to run the examples and exercises in the book.
 
-To run it enter the `interpreter` directory and type `cargo run --release`. This will drop you into the REPL.
-Any command line arguments are treated as file names to run in sequence before entering the REPL.
+After I finished the book the interpreter grew up and moved out.
+It now lives in https://github.com/mbillingr/interpreter.
 
-For example, to run an exercise:
-```
-cargo run --release ../chapter1/exercise1-27.scm
-```
